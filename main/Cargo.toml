@@ -1,6 +1,6 @@
 [package]
 name = "main"
-descrition = "Pachinko and the cub"
+description = "Pachinko and the cub"
 version = "0.1.0"
 edition = "2021"
 
