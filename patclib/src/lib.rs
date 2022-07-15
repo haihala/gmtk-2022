@@ -4,6 +4,7 @@ mod battle;
 mod encounter;
 mod flow;
 mod travel;
+mod ui;
 
 pub struct PatcPlugins;
 impl PluginGroup for PatcPlugins {
@@ -12,6 +13,7 @@ impl PluginGroup for PatcPlugins {
             .add(flow::FlowPlugin)
             .add(battle::BattlePlugin)
             .add(encounter::EncounterPlugin)
-            .add(travel::TravelPlugin);
+            .add(travel::TravelPlugin)
+            .add(ui::UIPlugin);
     }
 }
