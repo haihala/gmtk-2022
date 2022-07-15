@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{battle::Battle, encounter::Encounter};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-enum AppState {
+pub enum AppState {
     MainMenu,
     Travel,
     Encounter(Encounter),
