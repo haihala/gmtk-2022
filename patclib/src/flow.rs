@@ -1,13 +1,11 @@
 use bevy::prelude::*;
 
-use crate::{battle::Battle, encounter::Encounter};
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
     MainMenu,
     Travel,
-    Encounter(Encounter),
-    Battle(Battle),
+    Encounter,
+    Battle,
 }
 
 pub struct FlowPlugin;

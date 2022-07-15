@@ -10,6 +10,9 @@ pub struct NextEncounter {
     encounter: Encounter,
     start_at: f64,
 }
+#[derive(Debug, Deref, DerefMut)]
+pub struct OngoingEncounter(pub Encounter);
+
 pub struct TravelPlugin;
 
 impl Plugin for TravelPlugin {
@@ -37,8 +40,7 @@ fn start_encounter(
     if time.seconds_since_startup() > next_encounter.start_at {
         dbg!(&next_encounter);
         commands.remove_resource::<NextEncounter>();
-        app_state
-            .set(AppState::Encounter(next_encounter.encounter.clone()))
-            .unwrap()
+        commands.insert_resource(OngoingEncounter(next_encounter.encounter.clone()));
+        app_state.set(AppState::Encounter).unwrap()
     }
 }
