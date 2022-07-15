@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use pachinko_and_the_cub::PatcPlugins;
+use patclib::PatcPlugins;
 
 fn main() {
     App::new()

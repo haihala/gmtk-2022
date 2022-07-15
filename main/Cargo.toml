@@ -1,5 +1,6 @@
 [package]
-name = "pachinko-and-the-cub"
+name = "main"
+descrition = "Pachinko and the cub"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,3 +8,4 @@ edition = "2021"
 
 [dependencies]
 bevy="0.7.0"
+patclib= {path="../patclib"}
