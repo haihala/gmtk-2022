@@ -40,3 +40,10 @@ Run with `cargo run`. Prebuilt executables will be available eventually.
   - Structure
   - Content
 
+## Priority
+- Init
+- Main loop
+  - Non-combat encounter
+  - Combat encounter
+  - Travel between encounters
+- End
