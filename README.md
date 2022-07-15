@@ -2,10 +2,14 @@
 
 Game where you go through various encounters to escort a kid home. Written in rust with bevy. Submission for gmtk 2022 game jam.
 
+Run with `cargo run`. Prebuilt executables will be available eventually.
+
 ## Premise
 - Dice as Resources
   - When buying something, dice rolled to be currency
   - When playing anything, you need to use dice
+    - Dice bullets
+    - Dice batteries for devices
 
 ## Theme
   - Semi Scifi?
@@ -28,6 +32,11 @@ Game where you go through various encounters to escort a kid home. Written in ru
 
 
 ## TODO:
-  - ?
+- Visuals
+- Battle system
+- End state
+- Beginning state
+- Events
+  - Structure
+  - Content
 
-Run with `cargo run`. Prebuilt executables will be available eventually.
