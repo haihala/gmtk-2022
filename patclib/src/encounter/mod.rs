@@ -1,35 +1,60 @@
 use bevy::prelude::*;
 
-use crate::{battle::Battle, flow::AppState, travel::OngoingEncounter};
+use crate::{
+    battle::{Battle, OngoingBattle},
+    flow::AppState,
+    ui::UIHelper,
+};
 
 mod encounters;
 pub use encounters::get_random_encounter;
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub enum EncounterOptionOutcome {
-    Battle(Battle),
-    // Blocked by not having a player struct
-    // Purchase {cost: i32, reward: todo!()} ,
-    // Reward(),
-}
+#[derive(Debug, Deref, DerefMut)]
+pub struct OngoingEncounter(pub Encounter);
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct EncounterDecision {
-    prompt: String,
-    options: Vec<(String, EncounterOptionOutcome)>,
+    prompt: &'static str,
+    options: Vec<(&'static str, Box<EncounterPhase>)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum EncounterPhase {
     Battle(Battle),
-    Line(String),
+    Line(&'static str),
     Decision(EncounterDecision),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Encounter {
     phases: Vec<EncounterPhase>,
-    active_phase: usize,
+    index: usize,
+    active_phase: Option<EncounterPhase>,
+    waiting_decision: Option<EncounterDecision>,
+}
+impl Encounter {
+    fn from_phases(phases: Vec<EncounterPhase>) -> Self {
+        Self {
+            phases,
+            index: 0,
+            active_phase: None,
+            waiting_decision: None,
+        }
+    }
+
+    fn bump_phase(&mut self) {
+        self.active_phase = self.phases.get(self.index + 1).map(|item| item.to_owned());
+        self.index += 1;
+    }
+
+    pub fn choose(&mut self, index: usize) {
+        if let Some(decision) = self.waiting_decision.clone() {
+            self.active_phase = Some(*decision.options.get(index).unwrap().1.clone());
+        } else {
+            dbg!(self);
+            panic!("Choice is not happening, but choice was called");
+        }
+    }
 }
 
 pub struct EncounterPlugin;
@@ -43,31 +68,82 @@ impl Plugin for EncounterPlugin {
     }
 }
 
-fn init_encounter(encounter: Res<OngoingEncounter>) {
-    process_encounter_phase(encounter.phases[0].clone());
+fn init_encounter(
+    mut commands: Commands,
+    mut encounter: ResMut<OngoingEncounter>,
+    mut app_state: ResMut<State<AppState>>,
+    mut ui_helper: ResMut<UIHelper>,
+) {
+    if let Some(waiting) = process_encounter_phase(
+        encounter.phases[0].clone(),
+        &mut commands,
+        &mut app_state,
+        &mut ui_helper,
+    ) {
+        // It was a prompt, wait for answer
+        encounter.waiting_decision = Some(waiting);
+        encounter.active_phase = None;
+    } else {
+        // It was not a prompt, proceed
+        encounter.waiting_decision = None;
+        encounter.bump_phase();
+    }
 }
 
 fn advance_encounter(
     mut commands: Commands,
     mut encounter: ResMut<OngoingEncounter>,
     mut app_state: ResMut<State<AppState>>,
+    mut ui_helper: ResMut<UIHelper>,
 ) {
-    // See if user made a choice
-    let advance = true;
-
-    if advance {
-        if let Some(next_phase) = encounter.phases.get(encounter.active_phase + 1) {
-            // There is a phase after current one
-            process_encounter_phase(next_phase.clone());
-            encounter.active_phase += 1;
+    if let Some(active) = encounter.active_phase.clone() {
+        if let Some(waiting) =
+            process_encounter_phase(active, &mut commands, &mut app_state, &mut ui_helper)
+        {
+            // It was a prompt, wait for answer
+            encounter.waiting_decision = Some(waiting);
+            encounter.active_phase = None;
         } else {
-            // That was the last phase
-            app_state.set(AppState::Travel).unwrap();
-            commands.remove_resource::<OngoingEncounter>();
+            // It was not a prompt, proceed
+            encounter.waiting_decision = None;
+            encounter.bump_phase();
         }
+    } else if encounter.waiting_decision.is_none() {
+        // No active phase, nor is the system waiting for a decision
+        // Return to travel
+        app_state.pop().unwrap();
+        commands.remove_resource::<OngoingEncounter>();
     }
 }
 
-fn process_encounter_phase(phase: EncounterPhase) {
-    todo!()
+fn process_encounter_phase(
+    phase: EncounterPhase,
+    commands: &mut Commands,
+    app_state: &mut ResMut<State<AppState>>,
+    ui_helper: &mut ResMut<UIHelper>,
+) -> Option<EncounterDecision> {
+    match phase {
+        EncounterPhase::Battle(battle) => {
+            app_state.push(AppState::Battle).unwrap();
+            commands.insert_resource(OngoingBattle(battle));
+            ui_helper.show_line("Can't escape from crossing fate!");
+            None
+        }
+        EncounterPhase::Line(line) => {
+            ui_helper.show_line(line);
+            None
+        }
+        EncounterPhase::Decision(decision) => {
+            ui_helper.prompt(
+                decision.prompt,
+                decision
+                    .options
+                    .iter()
+                    .map(|(line, _)| line)
+                    .cloned()
+                    .collect(),
+            );
+            Some(decision)
+        }
+    }
 }

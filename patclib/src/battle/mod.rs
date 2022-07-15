@@ -3,6 +3,8 @@ use bevy::prelude::*;
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Battle;
 
+pub struct OngoingBattle(pub Battle);
+
 pub struct BattlePlugin;
 
 impl Plugin for BattlePlugin {

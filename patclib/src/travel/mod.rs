@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    encounter::{get_random_encounter, Encounter},
+    encounter::{get_random_encounter, Encounter, OngoingEncounter},
     flow::AppState,
 };
 
@@ -10,9 +10,6 @@ pub struct NextEncounter {
     encounter: Encounter,
     start_at: f64,
 }
-#[derive(Debug, Deref, DerefMut)]
-pub struct OngoingEncounter(pub Encounter);
-
 pub struct TravelPlugin;
 
 impl Plugin for TravelPlugin {
