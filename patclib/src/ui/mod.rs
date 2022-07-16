@@ -14,7 +14,9 @@ pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(init).add_system(update);
+        app.add_startup_system(init)
+            .add_system(update_top)
+            .add_system(helper::update_helper);
     }
 }
 
@@ -24,7 +26,7 @@ fn init(mut commands: Commands, assets: Res<AssetHandles>) {
     spawn_gui(&mut commands, assets);
 }
 
-fn update(
+fn update_top(
     player: Res<Player>,
     mut queries: ParamSet<(
         Query<&mut Text, With<StaminaText>>,
@@ -32,13 +34,7 @@ fn update(
         Query<&mut Text, With<BulletText>>,
     )>,
 ) {
-    for mut text in queries.p0().iter_mut() {
-        text.sections[0].value = format!("{}", player.resources.stamina);
-    }
-    for mut text in queries.p1().iter_mut() {
-        text.sections[0].value = format!("{}", player.resources.money);
-    }
-    for mut text in queries.p2().iter_mut() {
-        text.sections[0].value = format!("{}", player.resources.bullets);
-    }
+    queries.p0().single_mut().sections[0].value = format!("Stamina: {}", player.resources.stamina);
+    queries.p1().single_mut().sections[0].value = format!("Money: {}", player.resources.money);
+    queries.p2().single_mut().sections[0].value = format!("Bullets: {}", player.resources.bullets);
 }

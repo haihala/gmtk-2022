@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     encounter::{get_random_encounter, Encounter, OngoingEncounter},
     flow::AppState,
+    ui::UIHelper,
 };
 
 #[derive(Debug)]
@@ -21,7 +22,9 @@ impl Plugin for TravelPlugin {
 
 const WAIT_BEFORE_ENCOUNTER_STARTS: f64 = 5.0;
 
-fn init_travel(mut commands: Commands, time: Res<Time>) {
+fn init_travel(mut commands: Commands, time: Res<Time>, mut ui_helper: ResMut<UIHelper>) {
+    ui_helper.show_line("You start looking for trouble");
+
     commands.insert_resource(NextEncounter {
         encounter: get_random_encounter(),
         start_at: time.seconds_since_startup() + WAIT_BEFORE_ENCOUNTER_STARTS,

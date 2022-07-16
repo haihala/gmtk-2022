@@ -6,7 +6,7 @@ use super::utils::{div, div_style, FULL};
 
 // Markers
 #[derive(Debug, Component)]
-pub struct TextBox;
+pub struct ChatBox;
 #[derive(Debug, Component)]
 pub struct StaminaText;
 #[derive(Debug, Component)]
@@ -28,7 +28,7 @@ pub(super) fn spawn_gui(commands: &mut Commands, assets: Res<AssetHandles>) {
         })
         .with_children(|root| {
             top_bar(root, &assets);
-            text_box(root, &assets);
+            bottom_bar(root, &assets);
         });
 }
 
@@ -47,16 +47,16 @@ fn top_bar(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
         ..div()
     })
     .with_children(|bar| {
-        stat_text(bar, assets, "Stamina: ", StaminaText);
-        stat_text(bar, assets, "Money: ", MoneyText);
-        stat_text(bar, assets, "Ammo: ", BulletText);
+        stat_text(bar, assets, "Stamina: 0", StaminaText);
+        stat_text(bar, assets, "Money: 0", MoneyText);
+        stat_text(bar, assets, "Ammo: 0", BulletText);
     });
 }
 
 fn stat_text(
     root: &mut ChildBuilder,
     assets: &Res<AssetHandles>,
-    text: &'static str,
+    initial_text: &'static str,
     marker: impl Component,
 ) {
     root.spawn_bundle(NodeBundle {
@@ -66,6 +66,72 @@ fn stat_text(
                 right: Val::Px(20.0),
                 ..default()
             },
+            ..default()
+        },
+        ..div()
+    })
+    .with_children(|container| {
+        container
+            .spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    initial_text,
+                    TextStyle {
+                        font: assets.font.clone(),
+                        font_size: 18.0,
+                        color: assets.colors.white_font,
+                    },
+                    default(),
+                ),
+                ..default()
+            })
+            .insert(marker);
+    });
+}
+
+fn bottom_bar(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
+    root.spawn_bundle(NodeBundle {
+        color: assets.colors.gray_background,
+        style: Style {
+            size: Size::new(FULL, Val::Percent(40.0)),
+            ..div_style()
+        },
+        ..div()
+    })
+    .with_children(|bar| {
+        spawn_chat_box(bar, assets);
+    });
+}
+
+const BOTTOM_BOX_PORTRAIT_WIDTH: f32 = 15.0;
+
+fn spawn_chat_box(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
+    root.spawn_bundle(NodeBundle {
+        color: assets.colors.dark_background,
+        style: Style {
+            margin: Rect {
+                left: Val::Percent(BOTTOM_BOX_PORTRAIT_WIDTH),
+                right: Val::Percent(BOTTOM_BOX_PORTRAIT_WIDTH),
+                ..default()
+            },
+            overflow: Overflow::Hidden,
+            flex_direction: FlexDirection::ColumnReverse,
+            // justify_content: JustifyContent::FlexEnd,
+            ..div_style()
+        },
+        ..div()
+    })
+    .insert(ChatBox);
+}
+
+pub fn spawn_line(
+    root: &mut ChildBuilder,
+    assets: &Res<AssetHandles>,
+    text: &'static str,
+) -> Entity {
+    root.spawn_bundle(NodeBundle {
+        style: Style {
+            align_self: AlignSelf::FlexStart,
+            padding: Rect::all(Val::Px(5.0)),
             ..default()
         },
         ..div()
@@ -83,51 +149,6 @@ fn stat_text(
             ),
             ..default()
         });
-        container
-            .spawn_bundle(TextBundle {
-                text: Text::with_section(
-                    "0",
-                    TextStyle {
-                        font: assets.font.clone(),
-                        font_size: 18.0,
-                        color: assets.colors.white_font,
-                    },
-                    default(),
-                ),
-                ..default()
-            })
-            .insert(marker);
-    });
-}
-
-fn text_box(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
-    root.spawn_bundle(NodeBundle {
-        color: assets.colors.gray_background,
-        style: Style {
-            size: Size::new(FULL, Val::Percent(40.0)),
-            ..div_style()
-        },
-        ..div()
     })
-    .with_children(|bar| {
-        message_container(bar, assets);
-    });
-}
-
-const BOTTOM_BOX_PORTRAIT_WIDTH: f32 = 15.0;
-
-fn message_container(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
-    root.spawn_bundle(NodeBundle {
-        color: assets.colors.dark_background,
-        style: Style {
-            margin: Rect {
-                left: Val::Percent(BOTTOM_BOX_PORTRAIT_WIDTH),
-                right: Val::Percent(BOTTOM_BOX_PORTRAIT_WIDTH),
-                ..default()
-            },
-            ..div_style()
-        },
-        ..div()
-    })
-    .insert(TextBox);
+    .id()
 }
