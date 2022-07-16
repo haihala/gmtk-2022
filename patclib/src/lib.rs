@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+mod assets;
 mod battle;
 mod encounter;
 mod flow;
@@ -11,6 +12,7 @@ pub struct PatcPlugins;
 impl PluginGroup for PatcPlugins {
     fn build(&mut self, group: &mut bevy::app::PluginGroupBuilder) {
         group
+            .add(assets::AssetPlugin)
             .add(flow::FlowPlugin)
             .add(battle::BattlePlugin)
             .add(encounter::EncounterPlugin)

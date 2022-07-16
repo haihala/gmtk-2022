@@ -1,8 +1,14 @@
 use bevy::prelude::*;
 
+mod components;
 mod helper;
+mod utils;
 
 pub use helper::UIHelper;
+
+use crate::assets::AssetHandles;
+
+use self::components::spawn_gui;
 
 pub struct UIPlugin;
 
@@ -12,7 +18,8 @@ impl Plugin for UIPlugin {
     }
 }
 
-fn init(mut commands: Commands) {
+fn init(mut commands: Commands, assets: Res<AssetHandles>) {
     commands.insert_resource(UIHelper::new());
-    // TODO: Create UI
+    commands.spawn_bundle(UiCameraBundle::default());
+    spawn_gui(&mut commands, assets);
 }
