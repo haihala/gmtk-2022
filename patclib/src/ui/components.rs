@@ -13,6 +13,8 @@ pub struct StaminaText;
 pub struct MoneyText;
 #[derive(Debug, Component)]
 pub struct BulletText;
+#[derive(Debug, Component)]
+pub struct ActiveDecision;
 
 pub(super) fn spawn_gui(commands: &mut Commands, assets: Res<AssetHandles>) {
     commands
@@ -139,9 +141,20 @@ pub fn spawn_decision(
 
             container
                 .spawn_bundle(div())
+                .insert(ActiveDecision)
                 .with_children(|option_wrapper| {
+                    let mut first = true;
                     for option in options {
-                        option_wrapper.spawn_bundle(text_bundle(&assets, option));
+                        if first {
+                            option_wrapper.spawn_bundle(colored_text(
+                                &assets,
+                                option,
+                                assets.colors.highlight_text,
+                            ));
+                            first = false;
+                        } else {
+                            option_wrapper.spawn_bundle(text_bundle(&assets, option));
+                        }
                     }
                 });
         })
@@ -162,6 +175,9 @@ fn spawn_message_container() -> NodeBundle {
 }
 
 fn text_bundle(assets: &Res<AssetHandles>, text: &'static str) -> TextBundle {
+    colored_text(assets, text, assets.colors.basic_text)
+}
+fn colored_text(assets: &Res<AssetHandles>, text: &'static str, color: Color) -> TextBundle {
     TextBundle {
         style: Style { ..div_style() },
         text: Text::with_section(
@@ -169,7 +185,7 @@ fn text_bundle(assets: &Res<AssetHandles>, text: &'static str) -> TextBundle {
             TextStyle {
                 font: assets.font.clone(),
                 font_size: 18.0,
-                color: assets.colors.white_font,
+                color,
             },
             default(),
         ),

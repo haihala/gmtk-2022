@@ -9,7 +9,8 @@ pub struct AssetHandles {
 
 #[derive(Debug)]
 pub struct Colors {
-    pub white_font: Color,
+    pub basic_text: Color,
+    pub highlight_text: Color,
     pub dark_background: UiColor,
     pub gray_background: UiColor,
 }
@@ -34,7 +35,8 @@ fn load(mut commands: Commands, asset_server: Res<AssetServer>) {
             open_hand: asset_server.load("kammenAvoin.png"),
         },
         colors: Colors {
-            white_font: Color::WHITE,
+            basic_text: Color::WHITE,
+            highlight_text: Color::RED,
             dark_background: Color::rgb(0.13, 0.13, 0.13).into(),
             gray_background: Color::rgb(0.23, 0.23, 0.23).into(),
         },

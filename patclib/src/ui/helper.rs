@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{assets::AssetHandles, encounter::OngoingEncounter};
 
-use super::components::{spawn_decision, spawn_line, ChatBox};
+use super::components::{spawn_decision, spawn_line, ActiveDecision, ChatBox};
 
 #[derive(Debug)]
 enum ChatEvent {
@@ -56,22 +56,27 @@ impl UIHelper {
 pub(super) fn update_helper(
     mut commands: Commands,
     assets: Res<AssetHandles>,
-    query: Query<Entity, With<ChatBox>>,
+    chatbox_query: Query<Entity, With<ChatBox>>,
+    decision_query: Query<(Entity, &Children), With<ActiveDecision>>,
+    mut text_query: Query<&mut Text>,
     mut helper: ResMut<UIHelper>,
     kb_inputs: Res<Input<KeyCode>>,
     encounter: Option<ResMut<OngoingEncounter>>,
 ) {
-    commands.entity(query.single()).with_children(|container| {
-        let queue = helper.to_spawn.drain(..).collect::<Vec<_>>().into_iter();
-        helper
-            .spawned
-            .extend(queue.map(|spawnable| match spawnable {
-                ChatEvent::Line(line) => spawn_line(container, &assets, line),
-                ChatEvent::Prompt { prompt, options } => {
-                    spawn_decision(container, &assets, prompt, options)
-                }
-            }));
-    });
+    let queue: Vec<ChatEvent> = helper.to_spawn.drain(..).collect();
+
+    commands
+        .entity(chatbox_query.single())
+        .with_children(|container| {
+            helper
+                .spawned
+                .extend(queue.into_iter().map(|spawnable| match spawnable {
+                    ChatEvent::Line(line) => spawn_line(container, &assets, line),
+                    ChatEvent::Prompt { prompt, options } => {
+                        spawn_decision(container, &assets, prompt, options)
+                    }
+                }));
+        });
 
     let to_despawn = helper.spawned.len() as i32 - MAX_SPAWNED_EVENTS;
     if to_despawn > 0 {
@@ -81,21 +86,40 @@ pub(super) fn update_helper(
         }
     }
 
-    if let (Some(selected), Some(option_count)) = (helper.selected_option, helper.available_options)
-    {
+    if let (Some(selected), Some(option_count), Ok((active_decision, options))) = (
+        helper.selected_option,
+        helper.available_options,
+        decision_query.get_single(),
+    ) {
+        let mut new_index = None;
         // A decision is happening
         if kb_inputs.just_pressed(KeyCode::Left) {
             // Select the option to the left
-            helper.selected_option = Some(0.max(selected - 1));
+            new_index = Some(0.max(selected as i32 - 1) as usize);
         }
         if kb_inputs.just_pressed(KeyCode::Right) {
             // Select the option to the right
-            helper.selected_option = Some((option_count - 1).min(selected + 1));
+            new_index = Some((option_count - 1).min(selected + 1));
         }
+
+        if let Some(index) = new_index {
+            text_query.get_mut(options[selected]).unwrap().sections[0]
+                .style
+                .color = assets.colors.basic_text;
+            text_query.get_mut(options[index]).unwrap().sections[0]
+                .style
+                .color = assets.colors.highlight_text;
+
+            helper.selected_option = Some(index);
+        }
+
         if kb_inputs.any_just_pressed(vec![KeyCode::Space, KeyCode::Return]) {
             // Accept the choice
             encounter.unwrap().choose(selected);
             helper.clear_decision();
+
+            // Previously active decision is no longer active
+            commands.entity(active_decision).remove::<ActiveDecision>();
         }
     }
 }
