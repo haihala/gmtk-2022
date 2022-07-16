@@ -41,5 +41,67 @@ fn encounters() -> Vec<Encounter> {
             EncounterPhase::Line("Wolves attack!"),
             EncounterPhase::Battle(wolves.clone()),
         ]),
+        Encounter::from_phases(vec![
+            EncounterPhase::Line("You see a merchant travelling down the road"),
+            EncounterPhase::Decision(EncounterDecision {
+                prompt: "Would you like to see my wares?",
+                options: vec![
+                    (
+                        "Sure, why not.",
+                        Box::new(EncounterPhase::Decision(EncounterDecision {
+                            prompt: "What do you choose?",
+                            options: vec![
+                                (
+                                    "Ammo!",
+                                    Box::new(EncounterPhase::Trade((
+                                        "You get some ammo.",
+                                        "You don't have enough money.",
+                                        PlayerResources {
+                                            money: 3,
+                                            ..default()
+                                        },
+                                        PlayerResources {
+                                            bullets: 6,
+                                            ..default()
+                                        },
+                                    ))),
+                                ),
+                                (
+                                    "Food",
+                                    Box::new(EncounterPhase::Trade((
+                                        "You manage to gain some energy.",
+                                        "You don't have enough money.",
+                                        PlayerResources {
+                                            money: 2,
+                                            ..default()
+                                        },
+                                        PlayerResources {
+                                            stamina: 4,
+                                            ..default()
+                                        },
+                                    ))),
+                                ),
+                                (
+                                    "Mystery box",
+                                    Box::new(EncounterPhase::Trade((
+                                        "You gain a mystery box!",
+                                        "You don't have enough money.",
+                                        PlayerResources {
+                                            money: 2,
+                                            ..default()
+                                        },
+                                        PlayerResources { ..default() },
+                                    ))),
+                                ),
+                            ],
+                        })),
+                    ),
+                    (
+                        "No thank you.",
+                        Box::new(EncounterPhase::Line("The merchant continues his journey.")),
+                    ),
+                ],
+            }),
+        ]),
     ]
 }

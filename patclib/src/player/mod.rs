@@ -30,6 +30,17 @@ impl PlayerResources {
         self.money += other.money;
         self.bullets += other.bullets;
     }
+    pub fn remove(&mut self, other: PlayerResources) -> bool {
+        if self.stamina < other.stamina || self.money < other.money || self.bullets < other.bullets
+        {
+            return false;
+        } else {
+            self.stamina -= other.stamina;
+            self.money -= other.money;
+            self.bullets -= other.bullets;
+            return true;
+        }
+    }
 }
 
 pub struct PlayerPlugin;
