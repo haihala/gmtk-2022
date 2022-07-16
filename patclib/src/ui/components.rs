@@ -4,6 +4,16 @@ use crate::assets::AssetHandles;
 
 use super::utils::{div, div_style, FULL};
 
+// Markers
+#[derive(Debug, Component)]
+pub struct TextBox;
+#[derive(Debug, Component)]
+pub struct StaminaText;
+#[derive(Debug, Component)]
+pub struct MoneyText;
+#[derive(Debug, Component)]
+pub struct BulletText;
+
 pub(super) fn spawn_gui(commands: &mut Commands, assets: Res<AssetHandles>) {
     commands
         .spawn_bundle(NodeBundle {
@@ -37,25 +47,56 @@ fn top_bar(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
         ..div()
     })
     .with_children(|bar| {
-        bar.spawn_bundle(TextBundle {
-            style: Style {
-                align_self: AlignSelf::Center,
+        stat_text(bar, assets, "Stamina: ", StaminaText);
+        stat_text(bar, assets, "Money: ", MoneyText);
+        stat_text(bar, assets, "Ammo: ", BulletText);
+    });
+}
+
+fn stat_text(
+    root: &mut ChildBuilder,
+    assets: &Res<AssetHandles>,
+    text: &'static str,
+    marker: impl Component,
+) {
+    root.spawn_bundle(NodeBundle {
+        style: Style {
+            align_self: AlignSelf::Center,
+            margin: Rect {
+                right: Val::Px(20.0),
                 ..default()
             },
+            ..default()
+        },
+        ..div()
+    })
+    .with_children(|container| {
+        container.spawn_bundle(TextBundle {
             text: Text::with_section(
-                "Test text",
+                text,
                 TextStyle {
                     font: assets.font.clone(),
                     font_size: 18.0,
                     color: assets.colors.white_font,
                 },
-                TextAlignment {
-                    vertical: VerticalAlign::Center,
-                    horizontal: HorizontalAlign::Left,
-                },
+                default(),
             ),
             ..default()
         });
+        container
+            .spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "0",
+                    TextStyle {
+                        font: assets.font.clone(),
+                        font_size: 18.0,
+                        color: assets.colors.white_font,
+                    },
+                    default(),
+                ),
+                ..default()
+            })
+            .insert(marker);
     });
 }
 
@@ -87,5 +128,6 @@ fn message_container(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
             ..div_style()
         },
         ..div()
-    });
+    })
+    .insert(TextBox);
 }
