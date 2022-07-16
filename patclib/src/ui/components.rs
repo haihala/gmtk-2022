@@ -37,11 +37,6 @@ fn top_bar(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
         color: assets.colors.dark_background,
         style: Style {
             size: Size::new(FULL, Val::Percent(3.0)),
-            padding: Rect {
-                top: Val::Auto,
-                bottom: Val::Auto,
-                ..default()
-            },
             ..div_style()
         },
         ..div()
@@ -72,18 +67,7 @@ fn stat_text(
     })
     .with_children(|container| {
         container
-            .spawn_bundle(TextBundle {
-                text: Text::with_section(
-                    initial_text,
-                    TextStyle {
-                        font: assets.font.clone(),
-                        font_size: 18.0,
-                        color: assets.colors.white_font,
-                    },
-                    default(),
-                ),
-                ..default()
-            })
+            .spawn_bundle(text_bundle(&assets, initial_text))
             .insert(marker);
     });
 }
@@ -113,9 +97,17 @@ fn spawn_chat_box(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
                 right: Val::Percent(BOTTOM_BOX_PORTRAIT_WIDTH),
                 ..default()
             },
+            size: Size {
+                width: Val::Percent(100.0 - 2.0 * BOTTOM_BOX_PORTRAIT_WIDTH),
+                height: FULL,
+            },
             overflow: Overflow::Hidden,
+            align_self: AlignSelf::FlexStart,
             flex_direction: FlexDirection::ColumnReverse,
-            // justify_content: JustifyContent::FlexEnd,
+            align_content: AlignContent::FlexStart,
+            align_items: AlignItems::FlexStart,
+            justify_content: JustifyContent::FlexStart,
+            flex_grow: 0.0,
             ..div_style()
         },
         ..div()
@@ -130,18 +122,7 @@ pub fn spawn_line(
 ) -> Entity {
     root.spawn_bundle(spawn_message_container())
         .with_children(|container| {
-            container.spawn_bundle(TextBundle {
-                text: Text::with_section(
-                    text,
-                    TextStyle {
-                        font: assets.font.clone(),
-                        font_size: 18.0,
-                        color: assets.colors.white_font,
-                    },
-                    default(),
-                ),
-                ..default()
-            });
+            container.spawn_bundle(text_bundle(&assets, text));
         })
         .id()
 }
@@ -154,34 +135,13 @@ pub fn spawn_decision(
 ) -> Entity {
     root.spawn_bundle(spawn_message_container())
         .with_children(|container| {
-            container.spawn_bundle(TextBundle {
-                text: Text::with_section(
-                    prompt,
-                    TextStyle {
-                        font: assets.font.clone(),
-                        font_size: 18.0,
-                        color: assets.colors.white_font,
-                    },
-                    default(),
-                ),
-                ..default()
-            });
+            container.spawn_bundle(text_bundle(&assets, prompt));
+
             container
                 .spawn_bundle(div())
                 .with_children(|option_wrapper| {
                     for option in options {
-                        option_wrapper.spawn_bundle(TextBundle {
-                            text: Text::with_section(
-                                option,
-                                TextStyle {
-                                    font: assets.font.clone(),
-                                    font_size: 18.0,
-                                    color: assets.colors.white_font,
-                                },
-                                default(),
-                            ),
-                            ..default()
-                        });
+                        option_wrapper.spawn_bundle(text_bundle(&assets, option));
                     }
                 });
         })
@@ -191,11 +151,28 @@ pub fn spawn_decision(
 fn spawn_message_container() -> NodeBundle {
     NodeBundle {
         style: Style {
-            align_self: AlignSelf::FlexStart,
-            padding: Rect::all(Val::Px(5.0)),
+            margin: Rect::all(Val::Px(3.0)),
             flex_direction: FlexDirection::ColumnReverse,
-            ..default()
+            align_content: AlignContent::FlexStart,
+            justify_content: JustifyContent::FlexStart,
+            ..div_style()
         },
         ..div()
+    }
+}
+
+fn text_bundle(assets: &Res<AssetHandles>, text: &'static str) -> TextBundle {
+    TextBundle {
+        style: Style { ..div_style() },
+        text: Text::with_section(
+            text,
+            TextStyle {
+                font: assets.font.clone(),
+                font_size: 18.0,
+                color: assets.colors.white_font,
+            },
+            default(),
+        ),
+        ..default()
     }
 }

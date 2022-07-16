@@ -8,6 +8,8 @@ pub const FULL: Val = Val::Percent(100.0);
 pub(super) fn div_style() -> Style {
     Style {
         size: Size::new(FULL, FULL),
+        align_content: AlignContent::FlexStart,
+        flex_grow: 0.0,
         position: Rect {
             top: ZERO,
             left: ZERO,

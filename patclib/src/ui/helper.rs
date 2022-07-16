@@ -13,7 +13,7 @@ enum ChatEvent {
     },
 }
 
-const MAX_SPAWNED_EVENTS: i32 = 9;
+const MAX_SPAWNED_EVENTS: i32 = 6;
 
 #[derive(Debug, Default)]
 pub struct UIHelper {
@@ -42,7 +42,14 @@ impl UIHelper {
 
     // Interface for internal use
     pub(super) fn new() -> Self {
-        Self::default()
+        let mut item = Self::default();
+        // Aight so hear me out
+        // At the moment, the system looks weird if there is a low number of items shown
+        // Flood it with a lot of empty items to make adding the second item look fine.
+        for _ in 0..10 {
+            item.show_line("");
+        }
+        item
     }
 }
 
@@ -87,7 +94,6 @@ pub(super) fn update_helper(
         }
         if kb_inputs.any_just_pressed(vec![KeyCode::Space, KeyCode::Return]) {
             // Accept the choice
-            dbg!(&selected);
             encounter.unwrap().choose(selected);
             helper.clear_decision();
         }
