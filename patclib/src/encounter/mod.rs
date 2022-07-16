@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     battle::{Battle, OngoingBattle},
     flow::AppState,
+    player::{Player, PlayerResources},
     ui::UIHelper,
 };
 
@@ -23,6 +24,7 @@ pub enum EncounterPhase {
     Battle(Battle),
     Line(&'static str),
     Decision(EncounterDecision),
+    Gain((&'static str, PlayerResources)),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -73,12 +75,14 @@ fn init_encounter(
     mut encounter: ResMut<OngoingEncounter>,
     mut app_state: ResMut<State<AppState>>,
     mut ui_helper: ResMut<UIHelper>,
+    mut player: ResMut<Player>,
 ) {
     if let Some(waiting) = process_encounter_phase(
         encounter.phases[0].clone(),
         &mut commands,
         &mut app_state,
         &mut ui_helper,
+        &mut player,
     ) {
         // It was a prompt, wait for answer
         encounter.waiting_decision = Some(waiting);
@@ -95,11 +99,16 @@ fn advance_encounter(
     mut encounter: ResMut<OngoingEncounter>,
     mut app_state: ResMut<State<AppState>>,
     mut ui_helper: ResMut<UIHelper>,
+    mut player: ResMut<Player>,
 ) {
     if let Some(active) = encounter.active_phase.clone() {
-        if let Some(waiting) =
-            process_encounter_phase(active, &mut commands, &mut app_state, &mut ui_helper)
-        {
+        if let Some(waiting) = process_encounter_phase(
+            active,
+            &mut commands,
+            &mut app_state,
+            &mut ui_helper,
+            &mut player,
+        ) {
             // It was a prompt, wait for answer
             encounter.waiting_decision = Some(waiting);
             encounter.active_phase = None;
@@ -121,6 +130,7 @@ fn process_encounter_phase(
     commands: &mut Commands,
     app_state: &mut ResMut<State<AppState>>,
     ui_helper: &mut ResMut<UIHelper>,
+    player: &mut ResMut<Player>,
 ) -> Option<EncounterDecision> {
     match phase {
         EncounterPhase::Battle(battle) => {
@@ -144,6 +154,11 @@ fn process_encounter_phase(
                     .collect(),
             );
             Some(decision)
+        }
+        EncounterPhase::Gain((line, resources)) => {
+            ui_helper.show_line(line);
+            player.resources.add(resources);
+            None
         }
     }
 }

@@ -1,6 +1,7 @@
+use bevy::prelude::*;
 use rand::seq::SliceRandom;
 
-use crate::battle::Battle;
+use crate::{battle::Battle, player::PlayerResources};
 
 use super::{Encounter, EncounterDecision, EncounterPhase};
 
@@ -24,10 +25,17 @@ fn encounters() -> Vec<Encounter> {
                     ),
                     (
                         "Would rather not",
-                        Box::new(EncounterPhase::Line("You avoid the pointless fight")),
+                        Box::new(EncounterPhase::Gain((
+                            "You avoid the pointless fight, have a money",
+                            PlayerResources {
+                                money: 1,
+                                ..default()
+                            },
+                        ))),
                     ),
                 ],
             }),
+            EncounterPhase::Line("This is a test encounter"),
         ]),
         Encounter::from_phases(vec![
             EncounterPhase::Line("Wolves attack!"),

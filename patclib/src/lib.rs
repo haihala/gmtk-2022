@@ -3,7 +3,7 @@ use bevy::prelude::*;
 mod battle;
 mod encounter;
 mod flow;
-mod player_state;
+mod player;
 mod travel;
 mod ui;
 
@@ -16,6 +16,6 @@ impl PluginGroup for PatcPlugins {
             .add(encounter::EncounterPlugin)
             .add(travel::TravelPlugin)
             .add(ui::UIPlugin)
-            .add(player_state::PlayerStatePlugin);
+            .add(player::PlayerPlugin);
     }
 }
