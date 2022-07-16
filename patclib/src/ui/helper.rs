@@ -1,12 +1,16 @@
 use bevy::prelude::*;
 
-use crate::assets::AssetHandles;
+use crate::{assets::AssetHandles, encounter::OngoingEncounter};
 
-use super::components::{spawn_line, ChatBox};
+use super::components::{spawn_decision, spawn_line, ChatBox};
 
 #[derive(Debug)]
 enum ChatEvent {
     Line(&'static str),
+    Prompt {
+        prompt: &'static str,
+        options: Vec<&'static str>,
+    },
 }
 
 const MAX_SPAWNED_EVENTS: i32 = 9;
@@ -15,6 +19,8 @@ const MAX_SPAWNED_EVENTS: i32 = 9;
 pub struct UIHelper {
     to_spawn: Vec<ChatEvent>,
     spawned: Vec<Entity>,
+    selected_option: Option<usize>,
+    available_options: Option<usize>,
 }
 
 impl UIHelper {
@@ -24,8 +30,14 @@ impl UIHelper {
     }
 
     pub fn prompt(&mut self, prompt: &'static str, options: Vec<&'static str>) {
-        self.to_spawn.push(ChatEvent::Line(prompt));
-        dbg!(options);
+        self.available_options = Some(options.len());
+        self.selected_option = Some(0);
+        self.to_spawn.push(ChatEvent::Prompt { prompt, options });
+    }
+
+    fn clear_decision(&mut self) {
+        self.available_options = None;
+        self.selected_option = None;
     }
 
     // Interface for internal use
@@ -39,6 +51,8 @@ pub(super) fn update_helper(
     assets: Res<AssetHandles>,
     query: Query<Entity, With<ChatBox>>,
     mut helper: ResMut<UIHelper>,
+    kb_inputs: Res<Input<KeyCode>>,
+    encounter: Option<ResMut<OngoingEncounter>>,
 ) {
     commands.entity(query.single()).with_children(|container| {
         let queue = helper.to_spawn.drain(..).collect::<Vec<_>>().into_iter();
@@ -46,6 +60,9 @@ pub(super) fn update_helper(
             .spawned
             .extend(queue.map(|spawnable| match spawnable {
                 ChatEvent::Line(line) => spawn_line(container, &assets, line),
+                ChatEvent::Prompt { prompt, options } => {
+                    spawn_decision(container, &assets, prompt, options)
+                }
             }));
     });
 
@@ -54,6 +71,25 @@ pub(super) fn update_helper(
         // Too many events
         for entity in helper.spawned.drain(..to_despawn as usize) {
             commands.entity(entity).despawn_recursive();
+        }
+    }
+
+    if let (Some(selected), Some(option_count)) = (helper.selected_option, helper.available_options)
+    {
+        // A decision is happening
+        if kb_inputs.just_pressed(KeyCode::Left) {
+            // Select the option to the left
+            helper.selected_option = Some(0.max(selected - 1));
+        }
+        if kb_inputs.just_pressed(KeyCode::Right) {
+            // Select the option to the right
+            helper.selected_option = Some((option_count - 1).min(selected + 1));
+        }
+        if kb_inputs.any_just_pressed(vec![KeyCode::Space, KeyCode::Return]) {
+            // Accept the choice
+            dbg!(&selected);
+            encounter.unwrap().choose(selected);
+            helper.clear_decision();
         }
     }
 }

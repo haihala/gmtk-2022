@@ -35,7 +35,7 @@ fn encounters() -> Vec<Encounter> {
                     ),
                 ],
             }),
-            EncounterPhase::Line("This is a test encounter"),
+            EncounterPhase::Line("This encounter is over"),
         ]),
         Encounter::from_phases(vec![
             EncounterPhase::Line("Wolves attack!"),

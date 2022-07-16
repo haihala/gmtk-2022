@@ -128,27 +128,74 @@ pub fn spawn_line(
     assets: &Res<AssetHandles>,
     text: &'static str,
 ) -> Entity {
-    root.spawn_bundle(NodeBundle {
+    root.spawn_bundle(spawn_message_container())
+        .with_children(|container| {
+            container.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    text,
+                    TextStyle {
+                        font: assets.font.clone(),
+                        font_size: 18.0,
+                        color: assets.colors.white_font,
+                    },
+                    default(),
+                ),
+                ..default()
+            });
+        })
+        .id()
+}
+
+pub fn spawn_decision(
+    root: &mut ChildBuilder,
+    assets: &Res<AssetHandles>,
+    prompt: &'static str,
+    options: Vec<&'static str>,
+) -> Entity {
+    root.spawn_bundle(spawn_message_container())
+        .with_children(|container| {
+            container.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    prompt,
+                    TextStyle {
+                        font: assets.font.clone(),
+                        font_size: 18.0,
+                        color: assets.colors.white_font,
+                    },
+                    default(),
+                ),
+                ..default()
+            });
+            container
+                .spawn_bundle(div())
+                .with_children(|option_wrapper| {
+                    for option in options {
+                        option_wrapper.spawn_bundle(TextBundle {
+                            text: Text::with_section(
+                                option,
+                                TextStyle {
+                                    font: assets.font.clone(),
+                                    font_size: 18.0,
+                                    color: assets.colors.white_font,
+                                },
+                                default(),
+                            ),
+                            ..default()
+                        });
+                    }
+                });
+        })
+        .id()
+}
+
+fn spawn_message_container() -> NodeBundle {
+    NodeBundle {
         style: Style {
             align_self: AlignSelf::FlexStart,
             padding: Rect::all(Val::Px(5.0)),
+            flex_direction: FlexDirection::ColumnReverse,
             ..default()
         },
         ..div()
-    })
-    .with_children(|container| {
-        container.spawn_bundle(TextBundle {
-            text: Text::with_section(
-                text,
-                TextStyle {
-                    font: assets.font.clone(),
-                    font_size: 18.0,
-                    color: assets.colors.white_font,
-                },
-                default(),
-            ),
-            ..default()
-        });
-    })
-    .id()
+    }
 }
