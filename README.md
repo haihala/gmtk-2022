@@ -72,6 +72,41 @@ Encounter "Trading"
       - Is nothing
   - No thank you
 
+
+## Battle System
+
+3 linjaa.
+
+Mahdollisia toimintoja 6
+  - Move
+    - Change lane
+  - Shoot
+    - 1 ammo
+    - 1d6
+  - Fan it
+    - all ammo in revolver
+    - 1d4 per ammo
+  - Reload
+    - revolver to full
+  - Battery
+    - 1d4 to 3 lanes
+  - Cover
+
+Esimerkkitaistelu:
+sudet
+3 kpl
+6 hp per susi
+Liikkuvat yhden per vuoro
+Kun tulevat lähimmäiselle ruudulle, siirtyvät 2 ruutua taaemmas ja poistavat staminaa 1
+Ottaessaan osuman, siirtyvät yhden ruudun sivuun.
+-> Ei pysty fanaamaan kuoliaaksi
+
+Thug
+2 kpl
+10 hp per thug
+Liikkuvat yhden per vuoro
+-> ottavat takapakkia osumasta, maks 3 päähän osumasta
+
 ## TODO:
 - Visuals
 - Battle system
