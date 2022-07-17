@@ -11,6 +11,7 @@ pub struct AssetHandles {
 pub struct Colors {
     pub basic_text: Color,
     pub highlight_text: Color,
+    pub battle_tile: Color,
     pub dark_background: UiColor,
     pub gray_background: UiColor,
 }
@@ -18,6 +19,8 @@ pub struct Colors {
 #[derive(Debug)]
 pub struct Images {
     pub open_hand: Handle<Image>,
+    pub dog: Handle<Image>,
+    pub cowboy: Handle<Image>,
 }
 
 pub struct AssetPlugin;
@@ -33,10 +36,13 @@ fn load(mut commands: Commands, asset_server: Res<AssetServer>) {
         font: asset_server.load("FiraSans-Bold.ttf"),
         images: Images {
             open_hand: asset_server.load("kammenAvoin.png"),
+            dog: asset_server.load("dog.png"),
+            cowboy: asset_server.load("cowboy.png"),
         },
         colors: Colors {
             basic_text: Color::WHITE,
             highlight_text: Color::RED,
+            battle_tile: Color::BEIGE,
             dark_background: Color::rgb(0.13, 0.13, 0.13).into(),
             gray_background: Color::rgb(0.23, 0.23, 0.23).into(),
         },

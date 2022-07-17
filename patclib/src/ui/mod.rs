@@ -23,6 +23,7 @@ impl Plugin for UIPlugin {
 fn init(mut commands: Commands, assets: Res<AssetHandles>) {
     commands.insert_resource(UIHelper::new());
     commands.spawn_bundle(UiCameraBundle::default());
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     spawn_gui(&mut commands, assets);
 }
 

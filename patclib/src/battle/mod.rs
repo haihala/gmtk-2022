@@ -1,8 +1,10 @@
+mod visuals;
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
 use crate::{
+    assets::AssetHandles,
     dice_value::DiceValue,
     flow::AppState,
     player::{BattleAction, Player, PlayerResources},
@@ -161,13 +163,14 @@ impl Plugin for BattlePlugin {
 }
 
 fn init_battle(
+    mut commands: Commands,
+    assets: Res<AssetHandles>,
     mut ui_helper: ResMut<UIHelper>,
     player: Res<Player>,
     mut battle: ResMut<OngoingBattle>,
 ) {
-    // TODO:
-    // - Create play area visual
     battle.place_enemies();
+    visuals::init(&mut commands, &assets, &mut battle, &player);
     prompt_for_action(&mut ui_helper, player.get_battle_actions());
 }
 
