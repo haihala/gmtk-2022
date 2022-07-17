@@ -11,6 +11,7 @@ pub struct AssetHandles {
 pub struct Colors {
     pub basic_text: Color,
     pub highlight_text: Color,
+    pub crucial_text: Color,
     pub battle_tile: Color,
     pub dark_background: UiColor,
     pub gray_background: UiColor,
@@ -41,7 +42,8 @@ fn load(mut commands: Commands, asset_server: Res<AssetServer>) {
         },
         colors: Colors {
             basic_text: Color::WHITE,
-            highlight_text: Color::RED,
+            highlight_text: Color::GOLD,
+            crucial_text: Color::CRIMSON,
             battle_tile: Color::BEIGE,
             dark_background: Color::rgb(0.13, 0.13, 0.13).into(),
             gray_background: Color::rgb(0.23, 0.23, 0.23).into(),

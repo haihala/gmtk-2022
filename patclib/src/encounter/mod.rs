@@ -23,6 +23,7 @@ pub struct EncounterDecision {
 pub enum EncounterPhase {
     Battle(Battle),
     Line(&'static str),
+    HighlightLine(&'static str),
     Decision(EncounterDecision),
     Gain(&'static str, PlayerResources),
     Lose(&'static str, PlayerResources),
@@ -221,6 +222,10 @@ fn process_encounter_phase(
         }
         EncounterPhase::Line(line) => {
             ui_helper.show_line(line);
+            encounter.move_forward();
+        }
+        EncounterPhase::HighlightLine(line) => {
+            ui_helper.show_highlighted_line(line);
             encounter.move_forward();
         }
         EncounterPhase::Gain(line, resources) => {

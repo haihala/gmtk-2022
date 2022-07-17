@@ -128,6 +128,18 @@ pub fn spawn_line(root: &mut ChildBuilder, assets: &Res<AssetHandles>, text: Str
         .id()
 }
 
+pub fn spawn_highlighted_line(
+    root: &mut ChildBuilder,
+    assets: &Res<AssetHandles>,
+    text: String,
+) -> Entity {
+    root.spawn_bundle(spawn_message_container())
+        .with_children(|container| {
+            container.spawn_bundle(colored_text(&assets, text, assets.colors.crucial_text));
+        })
+        .id()
+}
+
 pub fn spawn_decision(
     root: &mut ChildBuilder,
     assets: &Res<AssetHandles>,

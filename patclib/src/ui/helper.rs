@@ -2,11 +2,14 @@ use bevy::prelude::*;
 
 use crate::{assets::AssetHandles, player::Player};
 
-use super::components::{spawn_decision, spawn_line, ActiveDecision, ChatBox};
+use super::components::{
+    spawn_decision, spawn_highlighted_line, spawn_line, ActiveDecision, ChatBox,
+};
 
 #[derive(Debug)]
 enum ChatEvent {
     Line(String),
+    HighlightedLine(String),
     Prompt {
         prompt: String,
         options: Vec<String>,
@@ -27,6 +30,9 @@ impl UIHelper {
     // Interface for public use
     pub fn show_line(&mut self, line: impl Into<String>) {
         self.to_spawn.push(ChatEvent::Line(line.into()));
+    }
+    pub fn show_highlighted_line(&mut self, line: impl Into<String>) {
+        self.to_spawn.push(ChatEvent::HighlightedLine(line.into()));
     }
 
     pub fn prompt(&mut self, prompt: impl Into<String>, options: Vec<impl Into<String>>) {
@@ -75,6 +81,9 @@ pub(super) fn update_helper(
                 .spawned
                 .extend(queue.into_iter().map(|spawnable| match spawnable {
                     ChatEvent::Line(line) => spawn_line(container, &assets, line),
+                    ChatEvent::HighlightedLine(line) => {
+                        spawn_highlighted_line(container, &assets, line)
+                    }
                     ChatEvent::Prompt { prompt, options } => {
                         spawn_decision(container, &assets, prompt, options)
                     }

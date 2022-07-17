@@ -47,15 +47,23 @@ fn encounters() -> Vec<Encounter> {
         },
     ]);
 
+    let stamina_drain = EncounterPhase::Lose(
+        "All this effort is exhausting",
+        PlayerResources {
+            stamina: 1,
+            ..default()
+        },
+    );
+
     vec![
-        test_encounter(wolves.clone()),
-        wolf_fight(wolves),
-        electric_sheep(),
+        test_encounter(wolves.clone(), stamina_drain.clone()),
+        wolf_fight(wolves, stamina_drain.clone()),
+        electric_sheep(stamina_drain.clone()),
         merchant(),
     ]
 }
 
-fn test_encounter(wolves: Battle) -> Encounter {
+fn test_encounter(wolves: Battle, stamina_drain: EncounterPhase) -> Encounter {
     Encounter::from_phases(vec![
         EncounterPhase::Line("This is a test encounter"),
         EncounterPhase::Decision(EncounterDecision {
@@ -75,17 +83,19 @@ fn test_encounter(wolves: Battle) -> Encounter {
             ],
         }),
         EncounterPhase::Line("This encounter is over"),
+        stamina_drain,
     ])
 }
 
-fn wolf_fight(wolves: Battle) -> Encounter {
+fn wolf_fight(wolves: Battle, stamina_drain: EncounterPhase) -> Encounter {
     Encounter::from_phases(vec![
         EncounterPhase::Line("Wolves attack!"),
         EncounterPhase::Battle(wolves),
+        stamina_drain,
     ])
 }
 
-fn electric_sheep() -> Encounter {
+fn electric_sheep(stamina_drain: EncounterPhase) -> Encounter {
     Encounter::from_phases(vec![
         EncounterPhase::Line("A herd of electric sheep are barreling at you"),
         EncounterPhase::Decision(EncounterDecision {
@@ -120,6 +130,7 @@ fn electric_sheep() -> Encounter {
             ],
         }),
         EncounterPhase::Line("The semimechanical bovine have been dealt with, but at what cost"),
+        stamina_drain,
     ])
 }
 
@@ -240,6 +251,7 @@ pub fn game_start() -> Encounter {
 
 pub fn game_over() -> Encounter {
     Encounter::from_phases(vec![
+        EncounterPhase::HighlightLine("Death comes to all. And did any of it matter in the end."),
         EncounterPhase::Line("Well, sometimes it that's how the dice fall. Can't win them all."),
         EncounterPhase::Line("Some people can't win them any."),
         EncounterPhase::Line(
