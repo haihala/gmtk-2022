@@ -299,6 +299,7 @@ fn process_turn(
 
                 let damage = weapon.damage.roll();
                 if damage >= player.resources.stamina {
+                    player.resources.stamina = 0;
                     ui_helper.show_line(format!(
                         "{} takes your life with the {}",
                         enemy.name, weapon.name
@@ -317,8 +318,8 @@ fn process_turn(
     if player.is_dead() {
         app_state.set(AppState::GameOver).unwrap();
     } else if battle.is_over() {
-        commands.remove_resource::<OngoingBattle>();
         // Battle is over, return to previous state
+        commands.remove_resource::<OngoingBattle>();
         app_state.pop().unwrap();
     } else {
         // Next round

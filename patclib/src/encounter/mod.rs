@@ -65,11 +65,7 @@ impl Encounter {
     }
 
     fn in_finished_combat(&self) -> bool {
-        if let Some(EncounterPhase::Battle(battle)) = self.get_active_phase() {
-            battle.is_over()
-        } else {
-            false
-        }
+        matches!(self.get_active_phase(), Some(EncounterPhase::Battle(_)))
     }
 
     fn break_loop(&mut self) {
@@ -147,8 +143,14 @@ fn advance_encounter(
         );
     } else if encounter.in_finished_combat() {
         // In combat but state is reset back to this, combat has been resolved
-        dbg!("Back in the encounter");
-        encounter.move_forward();
+        encounter.move_forward(); // Hop over the combat (or the prompt that brought us to combat)
+        event_loop(
+            &mut encounter,
+            &mut commands,
+            &mut app_state,
+            &mut ui_helper,
+            &mut player,
+        );
     }
 }
 

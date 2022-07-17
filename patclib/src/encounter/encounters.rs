@@ -16,7 +16,7 @@ pub fn get_random_encounter() -> Encounter {
 fn encounters() -> Vec<Encounter> {
     let wolf = Enemy {
         name: "",
-        health: 20,
+        health: 10,
         weapons: vec![
             Weapon {
                 name: "The Jaws that Bite",
@@ -48,10 +48,10 @@ fn encounters() -> Vec<Encounter> {
     ]);
 
     vec![
-        // test_encounter(wolves.clone()),
+        test_encounter(wolves.clone()),
         wolf_fight(wolves),
-        // electric_sheep(),
-        // merchant(),
+        electric_sheep(),
+        merchant(),
     ]
 }
 
@@ -250,7 +250,9 @@ pub fn game_over() -> Encounter {
             options: vec![
                 (
                     "Who are you?",
-                    Box::new(EncounterPhase::Line("Does it matter?")),
+                    Box::new(EncounterPhase::Line(
+                        "Does it matter? Why? Do you really crave meaning that badly?",
+                    )),
                 ),
                 (
                     "Cheers",
