@@ -8,4 +8,5 @@ edition = "2021"
 
 [dependencies]
 bevy="0.7.0"
+bevy_embedded_assets="0.3.0"
 patclib= {path="../patclib"}
