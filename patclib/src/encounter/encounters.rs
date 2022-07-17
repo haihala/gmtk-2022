@@ -202,3 +202,69 @@ fn merchant() -> Encounter {
         EncounterPhase::Line("The merchant continues his journey."),
     ])
 }
+
+pub fn game_start() -> Encounter {
+    Encounter::from_phases(vec![
+        EncounterPhase::Line("Welcome to the frontier. You are a cowboy in charge of a pupper"),
+        EncounterPhase::Line("Use the arrow keys to navigate and space or enter to select"),
+        EncounterPhase::Line("Adventure awaits"),
+        EncounterPhase::Decision(EncounterDecision {
+            prompt: "Start your adventure?",
+            options: vec![
+                (
+                    "Simple yes",
+                    Box::new(EncounterPhase::Line("That's the sprit!")),
+                ),
+                (
+                    "Sarcastic yes",
+                    Box::new(EncounterPhase::Line(
+                        "Aren't you a rascal! Too bad you have no agency",
+                    )),
+                ),
+                (
+                    "No but actually yes",
+                    Box::new(EncounterPhase::Line(
+                        "Denying the quest, how heroic. Too bad there is a game to be played.",
+                    )),
+                ),
+                (
+                    "I got confused",
+                    Box::new(EncounterPhase::Line(
+                        "Yeah sometimes it be like that. Hopefully you'll figure it out",
+                    )),
+                ),
+            ],
+        }),
+    ])
+}
+
+pub fn game_over() -> Encounter {
+    Encounter::from_phases(vec![
+        EncounterPhase::Line("Well, sometimes it that's how the dice fall. Can't win them all."),
+        EncounterPhase::Line("Some people can't win them any."),
+        EncounterPhase::Line(
+            "Hopefully you found some enjoyment out of this. But I have to go now.",
+        ),
+        EncounterPhase::Decision(EncounterDecision {
+            prompt: "Wait what?",
+            options: vec![
+                (
+                    "Who are you?",
+                    Box::new(EncounterPhase::Line("Does it matter?")),
+                ),
+                (
+                    "Cheers",
+                    Box::new(EncounterPhase::Line("It was fun while it lasted")),
+                ),
+                (
+                    "*Nod and tip your hat",
+                    Box::new(EncounterPhase::Line("Pardner, *tips back")),
+                ),
+                (
+                    "I'm still confused, even moreso than before",
+                    Box::new(EncounterPhase::Line("I sincerely hope you figure it out")),
+                ),
+            ],
+        }),
+    ])
+}

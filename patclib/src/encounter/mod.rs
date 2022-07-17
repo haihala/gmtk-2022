@@ -8,7 +8,7 @@ use crate::{
 };
 
 mod encounters;
-pub use encounters::get_random_encounter;
+pub use encounters::{game_over, game_start, get_random_encounter};
 
 #[derive(Debug, Deref, DerefMut)]
 pub struct OngoingEncounter(pub Encounter);

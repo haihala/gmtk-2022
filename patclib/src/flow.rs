@@ -1,6 +1,6 @@
 use bevy::{app::AppExit, prelude::*};
 
-use crate::{player::Player, ui::UIHelper};
+use crate::encounter::{game_over, game_start, OngoingEncounter};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
@@ -22,63 +22,35 @@ impl Plugin for FlowPlugin {
     }
 }
 
-fn prompt_to_start(mut ui_helper: ResMut<UIHelper>) {
-    ui_helper.show_line("Welcome to the frontier. You are a cowboy in charge of a pupper");
-    ui_helper.show_line("Use the arrow keys to navigate and space or enter to select");
-    ui_helper.show_line("Adventure awaits");
-    ui_helper.prompt(
-        "Start your adventure?",
-        vec![
-            "Simple yes",
-            "Sarcastic yes",
-            "No but actually yes",
-            "I got confused",
-        ],
-    )
+/*
+1. Game starts at MainMenu
+2. Initial encounter starts, push encounter as state
+3. State is popped once that is done, back in MainMenu
+4. Travel is set as state
+5. Travel randomizes encounters pushes encounter as state
+6. Encounters push battles as state
+7. Battle pops state
+8. Encounter pops state
+9. Repeat from 4
+10. Player dies, GameOver is set as state
+11. Final encounter set active, push encounter state
+12. Once encounter state is popped, wait a bit and close the game
+
+iirc on_enter doesn't register when a state is resumed
+ */
+
+fn prompt_to_start(mut commands: Commands, mut app_state: ResMut<State<AppState>>) {
+    commands.insert_resource(OngoingEncounter(game_start()));
+    app_state.push(AppState::Encounter).unwrap();
 }
 
-fn start_game(
-    mut app_state: ResMut<State<AppState>>,
-    mut player: ResMut<Player>,
-    mut ui_helper: ResMut<UIHelper>,
-) {
-    if let Some(choice) = player.drain_decision() {
-        match choice {
-            0 => {
-                ui_helper.show_line("That's the sprit!");
-            }
-            1 => {
-                ui_helper.show_line("Aren't you a rascal! Too bad you have no agency");
-            }
-            2 => {
-                ui_helper.show_line(
-                    "Denying the quest, how heroic. Too bad there is a game to be played.",
-                );
-            }
-            3 => {
-                ui_helper
-                    .show_line("Yeah sometimes it be like that. Hopefully you'll figure it out");
-            }
-            _ => panic!("How did you do that?"),
-        }
-
-        app_state.set(AppState::Travel).unwrap();
-    }
+fn start_game(mut app_state: ResMut<State<AppState>>) {
+    app_state.set(AppState::Travel).unwrap();
 }
 
-fn start_end_game(mut ui_helper: ResMut<UIHelper>) {
-    ui_helper.show_line("Well, sometimes it that's how the dice fall. Can't win them all.");
-    ui_helper.show_line("Some people can't win them any");
-    ui_helper.show_line("Hopefully you found some enjoyment out of this. But I have to go now.");
-    ui_helper.prompt(
-        "Wait what?",
-        vec![
-            "Who are you?",
-            "Cheers",
-            "*Nod and tip your hat",
-            "I'm still confused, even moreso than before",
-        ],
-    )
+fn start_end_game(mut commands: Commands, mut app_state: ResMut<State<AppState>>) {
+    commands.insert_resource(OngoingEncounter(game_over()));
+    app_state.push(AppState::Encounter).unwrap();
 }
 
 #[derive(Debug)]
@@ -86,8 +58,6 @@ struct TimeToQuit(f64);
 
 fn end_game(
     mut commands: Commands,
-    mut player: ResMut<Player>,
-    mut ui_helper: ResMut<UIHelper>,
     time: Res<Time>,
     time_to_quit: Option<Res<TimeToQuit>>,
     mut exit: EventWriter<AppExit>,
@@ -96,22 +66,7 @@ fn end_game(
         if ttq.0 < time.seconds_since_startup() {
             exit.send(AppExit);
         }
-    } else if let Some(choice) = player.drain_decision() {
-        match choice {
-            0 => {
-                ui_helper.show_line("Does it matter?");
-            }
-            1 => {
-                ui_helper.show_line("It was fun while it lasted");
-            }
-            2 => {
-                ui_helper.show_line("Pardner, *tips back");
-            }
-            3 => {
-                ui_helper.show_line("I sincerely hope you figure it out");
-            }
-            _ => panic!("How did you do that?"),
-        }
+    } else {
         commands.insert_resource(TimeToQuit(time.seconds_since_startup() + 5.0));
     }
 }

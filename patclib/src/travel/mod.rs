@@ -30,7 +30,6 @@ fn start_encounter(
 ) {
     if let Some(next) = next_encounter {
         if time.seconds_since_startup() > next.start_at {
-            dbg!(&next);
             commands.remove_resource::<NextEncounter>();
             commands.insert_resource(OngoingEncounter(next.encounter.clone()));
             app_state.push(AppState::Encounter).unwrap()
