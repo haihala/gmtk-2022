@@ -35,7 +35,14 @@ impl DiceValue {
         (6 * self.dice as i32 + self.constant) as u32
     }
     pub fn as_string(&self) -> String {
-        format!("{}d6+{}", self.dice, self.constant)
+        let mut bits = vec![];
+        if self.dice > 0 {
+            bits.push(format!("{}d6", self.dice));
+        }
+        if self.constant > 0 {
+            bits.push(format!("{}", self.constant));
+        }
+        bits.join("+")
     }
 }
 impl From<&str> for DiceValue {
