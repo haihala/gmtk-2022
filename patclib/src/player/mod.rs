@@ -33,12 +33,12 @@ impl PlayerResources {
     pub fn remove(&mut self, other: PlayerResources) -> bool {
         if self.stamina < other.stamina || self.money < other.money || self.bullets < other.bullets
         {
-            return false;
+            false
         } else {
             self.stamina -= other.stamina;
             self.money -= other.money;
             self.bullets -= other.bullets;
-            return true;
+            true
         }
     }
 }
