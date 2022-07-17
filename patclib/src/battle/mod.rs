@@ -1,4 +1,6 @@
 use bevy::prelude::*;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 
 use crate::{
     dice_value::DiceValue,
@@ -11,20 +13,46 @@ pub const BATTLE_ARENA_WIDTH: u32 = 4;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Battle {
-    enemies: Vec<Enemy>,
+    unused_enemies: Vec<Enemy>,
+    lanes: Vec<Option<Enemy>>,
 }
 impl Battle {
     /// Used to create a battle without any info on player state
     pub fn with(enemies: Vec<Enemy>) -> Self {
-        Self { enemies }
+        Self {
+            unused_enemies: enemies,
+            lanes: vec![None; BATTLE_ARENA_WIDTH as usize],
+        }
     }
 
     fn is_over(&self) -> bool {
-        self.enemies.iter().all(|enemy| enemy.health == 0)
+        self.lanes.iter().all(|lane| lane.is_none()) && self.unused_enemies.len() == 0
+    }
+
+    fn clean_out_dead(&mut self) {
+        for lane in self.lanes.iter_mut() {
+            if let Some(enemy) = lane {
+                if enemy.health == 0 {
+                    *lane = None;
+                }
+            }
+        }
     }
 
     fn place_enemies(&mut self) {
-        todo!();
+        while self.lanes.iter().any(|lane| lane.is_none()) && self.unused_enemies.len() > 0 {
+            let enemy = self.unused_enemies.pop().unwrap();
+            self.place_enemy(enemy);
+        }
+    }
+
+    fn place_enemy(&mut self, enemy: Enemy) {
+        for lane in self.lanes.iter_mut() {
+            if lane.is_none() {
+                *lane = Some(enemy);
+                return;
+            }
+        }
     }
 }
 
@@ -52,7 +80,7 @@ pub struct Enemy {
     pub name: &'static str,
     pub health: u32,
     pub weapons: Vec<Weapon>,
-    pub position: UVec2,
+    pub position: u32,
 }
 
 #[derive(Debug, Deref, DerefMut)]
@@ -73,8 +101,7 @@ fn init_battle(
     mut battle: ResMut<OngoingBattle>,
 ) {
     // TODO:
-    // - Create play area
-    // - Place enemies
+    // - Create play area visual
     battle.place_enemies();
     prompt_for_action(&mut ui_helper, player.get_battle_actions());
 }
@@ -86,6 +113,8 @@ fn advance_battle(
     mut player: ResMut<Player>,
     mut battle: ResMut<OngoingBattle>,
 ) {
+    let mut rng = thread_rng();
+
     if let Some(decision) = player.decision {
         player.decision = None;
 
@@ -100,14 +129,30 @@ fn advance_battle(
                 BattleAction::Attack => {
                     if let Some(selected_weapon) = player.selected_weapon {
                         // Decision is about selecting a target
-                        let selected_target = &mut battle.enemies[decision];
+                        let selected_target = &mut battle.unused_enemies[decision];
 
                         if player
                             .resources
                             .force_remove(selected_weapon.cost.unwrap_or_default())
                         {
                             // Could successfully afford to use that weapon
-                            selected_target.health -= selected_weapon.damage.roll();
+                            let damage = selected_weapon.damage.roll();
+
+                            if damage >= selected_target.health {
+                                selected_target.health -= damage;
+                                ui_helper.show_line(format!(
+                                    "Using your {} to deal {} damage to {}, it remains steadfast",
+                                    selected_weapon.name, damage, selected_target.name
+                                ));
+                            } else {
+                                ui_helper.show_line(format!(
+                                    "With your {} you rob {} of it's life",
+                                    selected_weapon.name, selected_target.name
+                                ));
+                                selected_target.health = 0;
+                            }
+                            battle.clean_out_dead();
+                            battle.place_enemies();
                         } else {
                             // Attempting to shoot, but resources are out
                             ui_helper.show_line(
@@ -115,7 +160,23 @@ fn advance_battle(
                             );
                         }
 
-                        // TODO: Handle enemies
+                        for enemy in battle.unused_enemies.iter_mut() {
+                            if enemy.position > 1 {
+                                // Move closer
+                                enemy.position -= 1;
+                            } else {
+                                // Attack
+                                enemy.position += 2;
+
+                                let weapon = enemy.weapons.choose(&mut rng).unwrap();
+                                let damage = weapon.damage.roll();
+                                player.resources.stamina -= damage;
+                                ui_helper.show_line(format!(
+                                    "{} uses {} to deal {} damage",
+                                    enemy.name, weapon.name, damage
+                                ));
+                            }
+                        }
 
                         if player.is_dead() {
                             app_state.set(AppState::GameOver).unwrap();
@@ -134,7 +195,7 @@ fn advance_battle(
                         prompt_for_target(
                             &mut ui_helper,
                             battle
-                                .enemies
+                                .unused_enemies
                                 .clone()
                                 .into_iter()
                                 .filter(|enemy| {
@@ -154,7 +215,9 @@ fn advance_battle(
             let selected_action = player.get_battle_actions()[decision];
             player.selected_action = Some(selected_action);
             match selected_action {
-                BattleAction::Move => prompt_for_location(&mut ui_helper),
+                BattleAction::Move => {
+                    prompt_for_location(&mut ui_helper, player.get_movable_locations())
+                }
                 BattleAction::Attack => prompt_for_weapon(&mut ui_helper, player.get_weapons()),
             }
         }
@@ -181,6 +244,9 @@ fn prompt_for_target(ui_helper: &mut ResMut<UIHelper>, enemies: Vec<Enemy>) {
     );
 }
 
-fn prompt_for_location(ui_helper: &mut ResMut<UIHelper>) {
-    todo!()
+fn prompt_for_location(ui_helper: &mut ResMut<UIHelper>, locations: Vec<(&'static str, u32)>) {
+    ui_helper.prompt(
+        "Whereabouts",
+        locations.iter().map(|location| location.0).collect(),
+    );
 }
