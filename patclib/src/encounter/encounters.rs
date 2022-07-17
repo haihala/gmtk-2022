@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use rand::seq::SliceRandom;
 
-use crate::{battle::Battle, player::PlayerResources};
+use crate::{
+    battle::{Battle, Enemy, Weapon},
+    player::PlayerResources,
+};
 
 use super::{Encounter, EncounterDecision, EncounterPhase};
 
@@ -11,7 +14,38 @@ pub fn get_random_encounter() -> Encounter {
 }
 
 fn encounters() -> Vec<Encounter> {
-    let wolves = Battle;
+    let wolf = Enemy {
+        name: "",
+        health: 20,
+        weapons: vec![
+            Weapon {
+                name: "The Jaws that Bite",
+                damage: "2d6".into(),
+                ..default()
+            },
+            Weapon {
+                name: "The Claws that Catch",
+                damage: "2d6".into(),
+                ..default()
+            },
+        ],
+        ..default()
+    };
+
+    let wolves = Battle::with(vec![
+        Enemy {
+            name: "Gamma wolf",
+            ..wolf.clone()
+        },
+        Enemy {
+            name: "Beta wolf",
+            ..wolf.clone()
+        },
+        Enemy {
+            name: "Scientifically accurate alpha wolf",
+            ..wolf.clone()
+        },
+    ]);
 
     vec![
         test_encounter(wolves.clone()),
@@ -33,7 +67,7 @@ fn test_encounter(wolves: Battle) -> Encounter {
                     Box::new(EncounterPhase::Gain(
                         "You avoid the pointless fight, have a money",
                         PlayerResources {
-                            money: 1,
+                            money: "1d6".into(),
                             ..default()
                         },
                     )),
@@ -59,7 +93,19 @@ fn electric_sheep() -> Encounter {
             options: vec![
                 (
                     "Stand your ground",
-                    Box::new(EncounterPhase::Battle(Battle)),
+                    Box::new(EncounterPhase::Battle(Battle::with(vec![
+                        Enemy {
+                            name: "Half sheep half machine",
+                            health: 10,
+                            weapons: vec![Weapon {
+                                name: "Hoofs of steel",
+                                damage: "1".into(),
+                                ..default()
+                            }],
+                            ..default()
+                        };
+                        5
+                    ]))),
                 ),
                 (
                     "Attempt to count them",
@@ -94,7 +140,7 @@ fn merchant() -> Encounter {
                                     "You get some ammo.",
                                     "You don't have enough money.",
                                     PlayerResources {
-                                        money: 3,
+                                        money: "3d6".into(),
                                         ..default()
                                     },
                                     PlayerResources {
@@ -109,7 +155,7 @@ fn merchant() -> Encounter {
                                     "You manage to gain some energy.",
                                     "You don't have enough money.",
                                     PlayerResources {
-                                        money: 2,
+                                        money: "2d6".into(),
                                         ..default()
                                     },
                                     PlayerResources {
@@ -124,7 +170,7 @@ fn merchant() -> Encounter {
                                     "You gain a mystery box!",
                                     "You don't have enough money.",
                                     PlayerResources {
-                                        money: 2,
+                                        money: "2d6".into(),
                                         ..default()
                                     },
                                     PlayerResources { ..default() },

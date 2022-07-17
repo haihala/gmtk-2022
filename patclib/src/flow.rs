@@ -3,6 +3,7 @@ use bevy::prelude::*;
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
     MainMenu,
+    GameOver,
     Travel,
     Encounter,
     Battle,

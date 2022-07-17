@@ -1,15 +1,15 @@
 use bevy::prelude::*;
 
-use crate::{assets::AssetHandles, encounter::OngoingEncounter};
+use crate::{assets::AssetHandles, player::Player};
 
 use super::components::{spawn_decision, spawn_line, ActiveDecision, ChatBox};
 
 #[derive(Debug)]
 enum ChatEvent {
-    Line(&'static str),
+    Line(String),
     Prompt {
-        prompt: &'static str,
-        options: Vec<&'static str>,
+        prompt: String,
+        options: Vec<String>,
     },
 }
 
@@ -25,14 +25,17 @@ pub struct UIHelper {
 
 impl UIHelper {
     // Interface for public use
-    pub fn show_line(&mut self, line: &'static str) {
-        self.to_spawn.push(ChatEvent::Line(line));
+    pub fn show_line(&mut self, line: impl Into<String>) {
+        self.to_spawn.push(ChatEvent::Line(line.into()));
     }
 
-    pub fn prompt(&mut self, prompt: &'static str, options: Vec<&'static str>) {
+    pub fn prompt(&mut self, prompt: impl Into<String>, options: Vec<impl Into<String>>) {
         self.available_options = Some(options.len());
         self.selected_option = Some(0);
-        self.to_spawn.push(ChatEvent::Prompt { prompt, options });
+        self.to_spawn.push(ChatEvent::Prompt {
+            prompt: prompt.into(),
+            options: options.into_iter().map(|option| option.into()).collect(),
+        });
     }
 
     fn clear_decision(&mut self) {
@@ -61,7 +64,7 @@ pub(super) fn update_helper(
     mut text_query: Query<&mut Text>,
     mut helper: ResMut<UIHelper>,
     kb_inputs: Res<Input<KeyCode>>,
-    encounter: Option<ResMut<OngoingEncounter>>,
+    mut player: ResMut<Player>,
 ) {
     let queue: Vec<ChatEvent> = helper.to_spawn.drain(..).collect();
 
@@ -115,7 +118,7 @@ pub(super) fn update_helper(
 
         if kb_inputs.any_just_pressed(vec![KeyCode::Space, KeyCode::Return]) {
             // Accept the choice
-            encounter.unwrap().choose(selected);
+            player.choose(selected);
             helper.clear_decision();
 
             // Previously active decision is no longer active

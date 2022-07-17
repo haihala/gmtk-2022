@@ -8,7 +8,7 @@ pub use helper::UIHelper;
 
 use crate::{assets::AssetHandles, player::Player};
 
-use self::components::{spawn_gui, BulletText, MoneyText, StaminaText};
+use self::components::{spawn_gui, BatteryText, BulletText, MoneyText, StaminaText};
 
 pub struct UIPlugin;
 
@@ -32,9 +32,13 @@ fn update_top(
         Query<&mut Text, With<StaminaText>>,
         Query<&mut Text, With<MoneyText>>,
         Query<&mut Text, With<BulletText>>,
+        Query<&mut Text, With<BatteryText>>,
     )>,
 ) {
     queries.p0().single_mut().sections[0].value = format!("Stamina: {}", player.resources.stamina);
-    queries.p1().single_mut().sections[0].value = format!("Money: {}", player.resources.money);
+    queries.p1().single_mut().sections[0].value =
+        format!("Money: {}", player.resources.money.as_string());
     queries.p2().single_mut().sections[0].value = format!("Bullets: {}", player.resources.bullets);
+    queries.p3().single_mut().sections[0].value =
+        format!("Batteries: {}", player.resources.batteries.as_string());
 }

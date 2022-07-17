@@ -14,6 +14,8 @@ pub struct MoneyText;
 #[derive(Debug, Component)]
 pub struct BulletText;
 #[derive(Debug, Component)]
+pub struct BatteryText;
+#[derive(Debug, Component)]
 pub struct ActiveDecision;
 
 pub(super) fn spawn_gui(commands: &mut Commands, assets: Res<AssetHandles>) {
@@ -47,6 +49,7 @@ fn top_bar(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
         stat_text(bar, assets, "Stamina: 0", StaminaText);
         stat_text(bar, assets, "Money: 0", MoneyText);
         stat_text(bar, assets, "Ammo: 0", BulletText);
+        stat_text(bar, assets, "Batteries: 0", BatteryText);
     });
 }
 
@@ -69,7 +72,7 @@ fn stat_text(
     })
     .with_children(|container| {
         container
-            .spawn_bundle(text_bundle(&assets, initial_text))
+            .spawn_bundle(text_bundle(&assets, initial_text.into()))
             .insert(marker);
     });
 }
@@ -117,11 +120,7 @@ fn spawn_chat_box(root: &mut ChildBuilder, assets: &Res<AssetHandles>) {
     .insert(ChatBox);
 }
 
-pub fn spawn_line(
-    root: &mut ChildBuilder,
-    assets: &Res<AssetHandles>,
-    text: &'static str,
-) -> Entity {
+pub fn spawn_line(root: &mut ChildBuilder, assets: &Res<AssetHandles>, text: String) -> Entity {
     root.spawn_bundle(spawn_message_container())
         .with_children(|container| {
             container.spawn_bundle(text_bundle(&assets, text));
@@ -132,8 +131,8 @@ pub fn spawn_line(
 pub fn spawn_decision(
     root: &mut ChildBuilder,
     assets: &Res<AssetHandles>,
-    prompt: &'static str,
-    options: Vec<&'static str>,
+    prompt: String,
+    options: Vec<String>,
 ) -> Entity {
     root.spawn_bundle(spawn_message_container())
         .with_children(|container| {
@@ -174,10 +173,10 @@ fn spawn_message_container() -> NodeBundle {
     }
 }
 
-fn text_bundle(assets: &Res<AssetHandles>, text: &'static str) -> TextBundle {
+fn text_bundle(assets: &Res<AssetHandles>, text: String) -> TextBundle {
     colored_text(assets, text, assets.colors.basic_text)
 }
-fn colored_text(assets: &Res<AssetHandles>, text: &'static str, color: Color) -> TextBundle {
+fn colored_text(assets: &Res<AssetHandles>, text: String, color: Color) -> TextBundle {
     TextBundle {
         style: Style { ..div_style() },
         text: Text::with_section(

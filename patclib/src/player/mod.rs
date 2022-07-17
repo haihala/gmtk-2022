@@ -1,44 +1,153 @@
+use core::fmt;
+
 use bevy::prelude::*;
 
-// Implement functionality for different ammo types/currencies if there is time.
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct Player {
-    pub resources: PlayerResources,
-}
+use crate::{battle::Weapon, dice_value::DiceValue};
 
-impl Default for Player {
-    fn default() -> Self {
-        Self {
-            resources: PlayerResources {
-                stamina: 100,
-                money: 5,
-                bullets: 15,
-            },
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub enum BattleAction {
+    Move,
+    Attack,
+}
+impl fmt::Display for BattleAction {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BattleAction::Move => write!(f, "move"),
+            BattleAction::Attack => write!(f, "attack"),
         }
     }
 }
 
-#[derive(Debug, Default, Clone, Eq, PartialEq, Hash)]
+// Implement functionality for different ammo types/currencies if there is time.
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Default)]
+pub struct Player {
+    pub resources: PlayerResources,
+    pub decision: Option<usize>,
+    pub weapons: Vec<Weapon>,
+    pub selected_action: Option<BattleAction>,
+    pub selected_weapon: Option<Weapon>,
+    pub position: IVec2,
+}
+
+impl Player {
+    fn new() -> Self {
+        Self {
+            resources: PlayerResources {
+                stamina: 100,
+                money: "5d6".into(),
+                batteries: "5d6".into(),
+                bullets: 15,
+            },
+            weapons: vec![
+                Weapon {
+                    name: "Trusty sidearm",
+                    damage: "1d6".into(),
+                    range: 5,
+                    cost: Some(PlayerResources {
+                        bullets: 1,
+                        ..default()
+                    }),
+                },
+                Weapon {
+                    name: "Still somewhat trusty taser",
+                    damage: "1d6".into(),
+                    range: 1,
+                    cost: Some(PlayerResources {
+                        batteries: "4".into(),
+                        ..default()
+                    }),
+                },
+                Weapon {
+                    name: "Knuckle sandwich",
+                    damage: "1".into(),
+                    range: 1,
+                    cost: None,
+                },
+            ],
+            ..default()
+        }
+    }
+    pub fn is_dead(&self) -> bool {
+        self.resources.stamina == 0
+    }
+
+    pub fn choose(&mut self, index: usize) {
+        self.decision = Some(index);
+    }
+
+    pub fn get_battle_actions(&self) -> Vec<BattleAction> {
+        // A function so if we want to later on add statuses that prevent moving or something, it's easier.
+        vec![BattleAction::Attack, BattleAction::Move]
+    }
+
+    pub fn get_weapons(&self) -> Vec<Weapon> {
+        self.weapons
+            .iter()
+            .filter(|weapon| {
+                weapon.cost.is_none() || self.resources.could_afford(&weapon.cost.unwrap())
+            })
+            .cloned()
+            .collect()
+    }
+
+    pub fn clear_selections(&mut self) {
+        self.selected_action = None;
+        self.selected_weapon = None;
+    }
+}
+
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct PlayerResources {
     pub stamina: u32,
-    pub money: u32,
+    pub money: DiceValue,
     pub bullets: u32,
+    pub batteries: DiceValue,
 }
 impl PlayerResources {
     pub fn add(&mut self, other: PlayerResources) {
         self.stamina += other.stamina;
         self.money += other.money;
+        self.batteries += other.batteries;
         self.bullets += other.bullets;
     }
+    pub fn could_afford(&self, other: &PlayerResources) -> bool {
+        // We could technically maybe afford something (theoretical maximum for uncertains)
+        self.stamina >= other.stamina
+            && self.bullets >= other.bullets
+            && self.money.theoretical_limit() >= other.money.theoretical_limit()
+            && self.batteries.theoretical_limit() >= other.batteries.theoretical_limit()
+    }
     pub fn remove(&mut self, other: PlayerResources) -> bool {
-        if self.stamina < other.stamina || self.money < other.money || self.bullets < other.bullets
-        {
-            false
-        } else {
+        let can_afford = self.could_afford(&other);
+        if can_afford {
+            if let (Some(new_money), Some(new_batteries)) = (
+                self.money.drained_to_match(other.money.roll()),
+                self.batteries.drained_to_match(other.batteries.roll()),
+            ) {
+                self.money = new_money;
+                self.batteries = new_batteries;
+                self.stamina -= other.stamina;
+                self.bullets -= other.bullets;
+            }
+        }
+
+        can_afford
+    }
+
+    pub fn force_remove(&mut self, other: PlayerResources) -> bool {
+        let can_afford = self.could_afford(&other);
+        if can_afford {
+            let new_money = self.money.drained_to_match(other.money.roll());
+            let new_batteries = self.batteries.drained_to_match(other.batteries.roll());
+
+            self.money = new_money.unwrap_or_default();
+            self.batteries = new_batteries.unwrap_or_default();
             self.stamina -= other.stamina;
-            self.money -= other.money;
             self.bullets -= other.bullets;
-            true
+
+            new_money.is_some() && new_batteries.is_some()
+        } else {
+            false
         }
     }
 }
@@ -52,5 +161,5 @@ impl Plugin for PlayerPlugin {
 }
 
 fn init(mut commands: Commands) {
-    commands.insert_resource(Player::default());
+    commands.insert_resource(Player::new());
 }

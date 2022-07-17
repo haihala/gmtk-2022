@@ -50,15 +50,6 @@ impl Encounter {
         self.active_phase = self.phases.get(self.index + 1).map(|item| item.to_owned());
         self.index += 1;
     }
-
-    pub fn choose(&mut self, index: usize) {
-        if let Some(decision) = self.waiting_decision.clone() {
-            self.active_phase = Some(*decision.options.get(index).unwrap().1.clone());
-        } else {
-            dbg!(self);
-            panic!("Choice is not happening, but choice was called");
-        }
-    }
 }
 
 pub struct EncounterPlugin;
@@ -119,7 +110,12 @@ fn advance_encounter(
             encounter.waiting_decision = None;
             encounter.bump_phase();
         }
-    } else if encounter.waiting_decision.is_none() {
+    } else if let (Some(decision), Some(index)) =
+        (encounter.waiting_decision.clone(), player.decision)
+    {
+        // Game is waiting for a player choice and player has made a decision
+        encounter.active_phase = Some(*decision.options.get(index).unwrap().1.clone())
+    } else {
         // No active phase, nor is the system waiting for a decision
         // Return to travel
         app_state.pop().unwrap();

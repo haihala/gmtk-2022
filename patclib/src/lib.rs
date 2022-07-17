@@ -1,3 +1,4 @@
+mod dice_value;
 use bevy::prelude::*;
 
 mod assets;
