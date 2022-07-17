@@ -11,12 +11,14 @@ use crate::{
 pub enum BattleAction {
     Move,
     Attack,
+    Wait,
 }
 impl fmt::Display for BattleAction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             BattleAction::Move => write!(f, "move"),
             BattleAction::Attack => write!(f, "attack"),
+            BattleAction::Wait => write!(f, "wait"),
         }
     }
 }
@@ -54,7 +56,7 @@ impl Player {
                 Weapon {
                     name: "Still somewhat trusty taser",
                     damage: "1d6".into(),
-                    range: 1,
+                    range: 2,
                     cost: Some(PlayerResources {
                         batteries: "4".into(),
                         ..default()
@@ -80,7 +82,7 @@ impl Player {
 
     pub fn get_battle_actions(&self) -> Vec<BattleAction> {
         // A function so if we want to later on add statuses that prevent moving or something, it's easier.
-        vec![BattleAction::Attack, BattleAction::Move]
+        vec![BattleAction::Attack, BattleAction::Move, BattleAction::Wait]
     }
 
     pub fn get_weapons(&self) -> Vec<Weapon> {

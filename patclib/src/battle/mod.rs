@@ -183,6 +183,15 @@ fn advance_battle(
 
         if let Some(selected_action) = player.selected_action {
             match selected_action {
+                BattleAction::Wait => {
+                    process_turn(
+                        &mut commands,
+                        &mut app_state,
+                        &mut battle,
+                        &mut player,
+                        &mut ui_helper,
+                    );
+                }
                 BattleAction::Move => {
                     player.position = player.get_movable_locations()[decision].1;
                     process_turn(
@@ -192,8 +201,6 @@ fn advance_battle(
                         &mut player,
                         &mut ui_helper,
                     );
-                    // Next round
-                    dbg!("Player moving done");
                 }
                 BattleAction::Attack => {
                     if let Some(selected_weapon) = player.selected_weapon {
@@ -263,6 +270,7 @@ fn advance_battle(
                     prompt_for_location(&mut ui_helper, player.get_movable_locations())
                 }
                 BattleAction::Attack => prompt_for_weapon(&mut ui_helper, player.get_weapons()),
+                BattleAction::Wait => {}
             }
         }
     }
