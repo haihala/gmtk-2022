@@ -420,6 +420,7 @@ pub fn game_start() -> Encounter {
                 ),
             ],
         }),
+        EncounterPhase::Line("Onwards!"),
     ])
 }
 

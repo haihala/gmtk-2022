@@ -149,7 +149,7 @@ impl Default for Enemy {
             }],
             position_y: BATTLE_ARENA_DEPTH,
             position_x: BATTLE_ARENA_WIDTH,
-            ..default()
+            handle_image: default(),
         }
     }
 }
