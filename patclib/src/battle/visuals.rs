@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::{asset::LoadedAsset, prelude::*};
+use bevy::prelude::*;
 
 use crate::{assets::AssetHandles, player::Player};
 
@@ -71,7 +71,6 @@ fn draw_tile(commands: &mut Commands, assets: &Res<AssetHandles>, x: u32, y: u32
 }
 
 fn draw_enemies(commands: &mut Commands, assets: &Res<AssetHandles>, lanes: Vec<Option<Enemy>>) {
-    //todo!()
     for lane in lanes.iter() {
         if let Some(enemy) = lane {
             let bundle: SpriteBundle = SpriteBundle {
@@ -91,6 +90,7 @@ fn draw_enemies(commands: &mut Commands, assets: &Res<AssetHandles>, lanes: Vec<
                 texture: enemy.handle_image.clone(),
                 ..default()
             };
+            commands.spawn_bundle(bundle);
         }
     }
 }
