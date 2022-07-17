@@ -158,19 +158,24 @@ impl PlayerResources {
 
     pub fn force_remove(&mut self, other: PlayerResources) -> bool {
         let can_afford = self.could_afford(&other);
-        if can_afford {
-            let new_money = self.money.drained_to_match(other.money.roll());
-            let new_batteries = self.batteries.drained_to_match(other.batteries.roll());
 
-            self.money = new_money.unwrap_or_default();
-            self.batteries = new_batteries.unwrap_or_default();
-            self.stamina -= other.stamina;
-            self.bullets -= other.bullets;
+        let new_money = self.money.drained_to_match(other.money.roll());
+        let new_batteries = self.batteries.drained_to_match(other.batteries.roll());
 
-            new_money.is_some() && new_batteries.is_some()
+        self.money = new_money.unwrap_or_default();
+        self.batteries = new_batteries.unwrap_or_default();
+        self.stamina = if self.stamina >= other.stamina {
+            self.stamina - other.stamina
         } else {
-            false
-        }
+            0
+        };
+        self.bullets = if self.bullets >= other.bullets {
+            self.bullets - other.bullets
+        } else {
+            0
+        };
+
+        can_afford && new_money.is_some() && new_batteries.is_some()
     }
 }
 

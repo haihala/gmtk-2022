@@ -28,7 +28,7 @@ impl Battle {
         }
     }
 
-    fn is_over(&self) -> bool {
+    pub fn is_over(&self) -> bool {
         self.lanes.iter().all(|lane| lane.is_none()) && self.unused_enemies.len() == 0
     }
 

@@ -71,6 +71,14 @@ impl Encounter {
         )
     }
 
+    fn in_finished_combat(&self) -> bool {
+        if let Some(EncounterPhase::Battle(battle)) = self.get_active_phase() {
+            battle.is_over()
+        } else {
+            false
+        }
+    }
+
     fn break_loop(&mut self) {
         self.stack.pop();
         self.stack_pointers.pop();
@@ -144,6 +152,9 @@ fn advance_encounter(
             &mut ui_helper,
             &mut player,
         );
+    } else if encounter.in_finished_combat() {
+        // In combat but state is reset back to this, combat has been resolved
+        encounter.move_forward();
     }
 }
 
@@ -156,8 +167,16 @@ fn event_loop(
 ) {
     loop {
         if let Some(phase) = encounter.get_active_phase() {
-            dbg!(&phase);
+            // Exists because in death we still need to handle events
+            let old_stamina = player.resources.stamina;
             process_encounter_phase(encounter, phase, commands, app_state, ui_helper, player);
+            if player.resources.stamina == 0 && old_stamina > 0 {
+                // Player died to this thing
+                commands.remove_resource::<OngoingEncounter>();
+                app_state.set(AppState::GameOver).unwrap();
+                break;
+            }
+
             if encounter.waiting_for_input() {
                 // This will show the question being prompted for
                 let phase = encounter.get_active_phase().unwrap();
@@ -197,7 +216,6 @@ fn process_encounter_phase(
             app_state.push(AppState::Battle).unwrap();
             commands.insert_resource(OngoingBattle(battle));
             ui_helper.show_line("Can't escape from crossing fate!");
-            encounter.move_forward();
         }
         EncounterPhase::Line(line) => {
             ui_helper.show_line(line);
@@ -210,7 +228,7 @@ fn process_encounter_phase(
         }
         EncounterPhase::Lose(line, resources) => {
             ui_helper.show_line(line);
-            player.resources.remove(resources);
+            player.resources.force_remove(resources);
             encounter.move_forward();
         }
         EncounterPhase::Trade(line_success, line_failure, resources_cost, resources_reward) => {
