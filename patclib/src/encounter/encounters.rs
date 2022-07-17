@@ -25,13 +25,13 @@ fn encounters() -> Vec<Encounter> {
                     ),
                     (
                         "Would rather not",
-                        Box::new(EncounterPhase::Gain((
+                        Box::new(EncounterPhase::Gain(
                             "You avoid the pointless fight, have a money",
                             PlayerResources {
                                 money: 1,
                                 ..default()
                             },
-                        ))),
+                        )),
                     ),
                 ],
             }),
@@ -40,6 +40,28 @@ fn encounters() -> Vec<Encounter> {
         Encounter::from_phases(vec![
             EncounterPhase::Line("Wolves attack!"),
             EncounterPhase::Battle(wolves.clone()),
+        ]),
+        Encounter::from_phases(vec![
+            EncounterPhase::Line("A herd of electric sheep are barreling your way"),
+            EncounterPhase::Decision(EncounterDecision {
+                prompt: "What do you do?",
+                options: vec![
+                    (
+                        "Attempt to count them",
+                        Box::new(EncounterPhase::Lose(
+                            "You start feeling drowsy, the sheep trample over you, costing you some time and energy",
+                            PlayerResources { stamina: 20,..default()}
+                        ))
+                    ),
+                    (
+                        "Stand your ground",
+                        Box::new(EncounterPhase::Battle(
+                            Battle
+                        ))
+                    )
+                ],
+
+            }),
         ]),
         Encounter::from_phases(vec![
             EncounterPhase::Line("You see a merchant travelling down the road"),
@@ -53,7 +75,7 @@ fn encounters() -> Vec<Encounter> {
                             options: vec![
                                 (
                                     "Ammo!",
-                                    Box::new(EncounterPhase::Trade((
+                                    Box::new(EncounterPhase::Trade(
                                         "You get some ammo.",
                                         "You don't have enough money.",
                                         PlayerResources {
@@ -64,11 +86,11 @@ fn encounters() -> Vec<Encounter> {
                                             bullets: 6,
                                             ..default()
                                         },
-                                    ))),
+                                    )),
                                 ),
                                 (
                                     "Food",
-                                    Box::new(EncounterPhase::Trade((
+                                    Box::new(EncounterPhase::Trade(
                                         "You manage to gain some energy.",
                                         "You don't have enough money.",
                                         PlayerResources {
@@ -79,11 +101,11 @@ fn encounters() -> Vec<Encounter> {
                                             stamina: 4,
                                             ..default()
                                         },
-                                    ))),
+                                    )),
                                 ),
                                 (
                                     "Mystery box",
-                                    Box::new(EncounterPhase::Trade((
+                                    Box::new(EncounterPhase::Trade(
                                         "You gain a mystery box!",
                                         "You don't have enough money.",
                                         PlayerResources {
@@ -91,7 +113,7 @@ fn encounters() -> Vec<Encounter> {
                                             ..default()
                                         },
                                         PlayerResources { ..default() },
-                                    ))),
+                                    )),
                                 ),
                             ],
                         })),

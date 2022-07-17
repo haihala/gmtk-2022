@@ -24,9 +24,9 @@ pub enum EncounterPhase {
     Battle(Battle),
     Line(&'static str),
     Decision(EncounterDecision),
-    Gain((&'static str, PlayerResources)),
-    Lose((&'static str, PlayerResources)),
-    Trade((&'static str, &'static str, PlayerResources, PlayerResources)),
+    Gain(&'static str, PlayerResources),
+    Lose(&'static str, PlayerResources),
+    Trade(&'static str, &'static str, PlayerResources, PlayerResources),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -157,17 +157,17 @@ fn process_encounter_phase(
             );
             Some(decision)
         }
-        EncounterPhase::Gain((line, resources)) => {
+        EncounterPhase::Gain(line, resources) => {
             ui_helper.show_line(line);
             player.resources.add(resources);
             None
         }
-        EncounterPhase::Lose((line, resources)) => {
+        EncounterPhase::Lose(line, resources) => {
             ui_helper.show_line(line);
             player.resources.remove(resources);
             None
         }
-        EncounterPhase::Trade((line_success, line_failure, resources_cost, resources_reward)) => {
+        EncounterPhase::Trade(line_success, line_failure, resources_cost, resources_reward) => {
             if player.resources.remove(resources_cost) {
                 player.resources.add(resources_reward);
                 ui_helper.show_line(line_success);
