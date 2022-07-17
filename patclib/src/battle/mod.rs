@@ -292,29 +292,35 @@ fn process_turn(
 
     for lane in battle.lanes.iter_mut() {
         if let Some(ref mut enemy) = lane {
-            let weapon = enemy.weapons.choose(&mut rng).unwrap();
-            if enemy.position_y > weapon.range {
-                // Move closer
-                enemy.position_y -= 1;
-                ui_helper.show_line(format!("{} creeps closer", enemy.name))
-            } else {
-                // Attack
-                enemy.position_y += 2;
-
-                let damage = weapon.damage.roll();
-                if damage >= player.resources.stamina {
-                    player.resources.stamina = 0;
-                    ui_helper.show_line(format!(
-                        "{} takes your life with the {}",
-                        enemy.name, weapon.name
-                    ));
+            if let Some(weapon) = enemy.weapons.choose(&mut rng) {
+                if enemy.position_y > weapon.range {
+                    // Move closer
+                    enemy.position_y -= 1;
+                    ui_helper.show_line(format!("{} creeps closer", enemy.name))
                 } else {
-                    player.resources.stamina -= damage;
-                    ui_helper.show_line(format!(
-                        "{} uses {} to deal {} damage",
-                        enemy.name, weapon.name, damage
-                    ));
+                    // Attack
+                    enemy.position_y += 2;
+
+                    let damage = weapon.damage.roll() as i32;
+                    if damage >= player.resources.stamina {
+                        player.resources.stamina = 0;
+                        ui_helper.show_line(format!(
+                            "{} takes your life with the {}",
+                            enemy.name, weapon.name
+                        ));
+                    } else {
+                        player.resources.stamina -= damage;
+                        ui_helper.show_line(format!(
+                            "{} uses {} to deal {} damage",
+                            enemy.name, weapon.name, damage
+                        ));
+                    }
                 }
+            } else {
+                ui_helper.show_line(format!(
+                    "{} seems unarmed, but far from dangerous",
+                    enemy.name
+                ))
             }
         }
     }

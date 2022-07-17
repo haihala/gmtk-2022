@@ -120,9 +120,9 @@ impl Player {
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct PlayerResources {
-    pub stamina: u32,
+    pub stamina: i32,
     pub money: DiceValue,
-    pub bullets: u32,
+    pub bullets: i32,
     pub batteries: DiceValue,
 }
 impl PlayerResources {
