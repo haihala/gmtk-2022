@@ -112,6 +112,10 @@ impl Player {
         self.selected_action = None;
         self.selected_weapon = None;
     }
+
+    pub fn drain_decision(&mut self) -> Option<usize> {
+        self.decision.take()
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]

@@ -99,8 +99,7 @@ fn advance_encounter(
         )
     } else if let Some(decision) = encounter.waiting_decision.clone() {
         // Game is waiting for a player choice
-        if let Some(index) = player.decision {
-            player.decision = None;
+        if let Some(index) = player.drain_decision() {
             // player has made a decision
             encounter.active_phase = Some(*decision.options.get(index).unwrap().1.clone())
         }

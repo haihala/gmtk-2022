@@ -181,9 +181,7 @@ fn advance_battle(
     mut player: ResMut<Player>,
     mut battle: ResMut<OngoingBattle>,
 ) {
-    if let Some(decision) = player.decision {
-        player.decision = None;
-
+    if let Some(decision) = player.drain_decision() {
         if let Some(selected_action) = player.selected_action {
             match selected_action {
                 BattleAction::Wait => {
