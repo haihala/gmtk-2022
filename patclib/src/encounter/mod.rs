@@ -64,13 +64,6 @@ impl Encounter {
         }
     }
 
-    fn waiting_for_input(&self) -> bool {
-        matches!(
-            self.get_active_phase(),
-            Some(EncounterPhase::Decision(_) | EncounterPhase::Battle(_))
-        )
-    }
-
     fn in_finished_combat(&self) -> bool {
         if let Some(EncounterPhase::Battle(battle)) = self.get_active_phase() {
             battle.is_over()
@@ -154,6 +147,7 @@ fn advance_encounter(
         );
     } else if encounter.in_finished_combat() {
         // In combat but state is reset back to this, combat has been resolved
+        dbg!("Back in the encounter");
         encounter.move_forward();
     }
 }
@@ -169,18 +163,24 @@ fn event_loop(
         if let Some(phase) = encounter.get_active_phase() {
             // Exists because in death we still need to handle events
             let old_stamina = player.resources.stamina;
-            process_encounter_phase(encounter, phase, commands, app_state, ui_helper, player);
+            process_encounter_phase(
+                encounter,
+                phase.clone(),
+                commands,
+                app_state,
+                ui_helper,
+                player,
+            );
             if player.resources.stamina == 0 && old_stamina > 0 {
                 // Player died to this thing
                 commands.remove_resource::<OngoingEncounter>();
                 app_state.set(AppState::GameOver).unwrap();
                 break;
             }
-
-            if encounter.waiting_for_input() {
-                // This will show the question being prompted for
-                let phase = encounter.get_active_phase().unwrap();
-                process_encounter_phase(encounter, phase, commands, app_state, ui_helper, player);
+            if matches!(
+                phase,
+                EncounterPhase::Decision(_) | EncounterPhase::Battle(_)
+            ) {
                 break;
             }
         } else {

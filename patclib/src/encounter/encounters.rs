@@ -48,10 +48,10 @@ fn encounters() -> Vec<Encounter> {
     ]);
 
     vec![
-        test_encounter(wolves.clone()),
+        // test_encounter(wolves.clone()),
         wolf_fight(wolves),
-        electric_sheep(),
-        merchant(),
+        // electric_sheep(),
+        // merchant(),
     ]
 }
 

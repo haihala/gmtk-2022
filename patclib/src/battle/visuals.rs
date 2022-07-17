@@ -40,7 +40,9 @@ fn draw_tile(commands: &mut Commands, assets: &Res<AssetHandles>, x: u32, y: u32
     let bundle: SpriteBundle = SpriteBundle {
         transform: Transform {
             translation: Vec3::new(
-                (x as f32) * TILE_WIDTH + TILE_X_OFFSET + (((BATTLE_ARENA_DEPTH - y) as f32) * TILE_SCALE_CHANGE),
+                (x as f32) * TILE_WIDTH
+                    + TILE_X_OFFSET
+                    + (((BATTLE_ARENA_DEPTH - y) as f32) * TILE_SCALE_CHANGE),
                 (y as f32) * TILE_HEIGHT + TILE_Y_OFFSET,
                 0.0,
             ),

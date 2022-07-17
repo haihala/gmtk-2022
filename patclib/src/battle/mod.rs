@@ -185,13 +185,7 @@ fn advance_battle(
         if let Some(selected_action) = player.selected_action {
             match selected_action {
                 BattleAction::Wait => {
-                    process_turn(
-                        &mut commands,
-                        &mut app_state,
-                        &mut battle,
-                        &mut player,
-                        &mut ui_helper,
-                    );
+                    panic!("How did you get here?");
                 }
                 BattleAction::Move => {
                     player.position = player.get_movable_locations()[decision].1;
@@ -271,7 +265,13 @@ fn advance_battle(
                     prompt_for_location(&mut ui_helper, player.get_movable_locations())
                 }
                 BattleAction::Attack => prompt_for_weapon(&mut ui_helper, player.get_weapons()),
-                BattleAction::Wait => {}
+                BattleAction::Wait => process_turn(
+                    &mut commands,
+                    &mut app_state,
+                    &mut battle,
+                    &mut player,
+                    &mut ui_helper,
+                ),
             }
         }
     }
@@ -292,6 +292,7 @@ fn process_turn(
             if enemy.position > weapon.range {
                 // Move closer
                 enemy.position -= 1;
+                ui_helper.show_line(format!("{} creeps closer", enemy.name))
             } else {
                 // Attack
                 enemy.position += 2;
