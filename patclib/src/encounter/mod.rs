@@ -70,21 +70,15 @@ fn init_encounter(
     mut ui_helper: ResMut<UIHelper>,
     mut player: ResMut<Player>,
 ) {
-    if let Some(waiting) = process_encounter_phase(
-        encounter.phases[0].clone(),
+    let phase = encounter.phases[0].clone();
+    process_encounter_phase(
+        &mut encounter,
+        phase,
         &mut commands,
         &mut app_state,
         &mut ui_helper,
         &mut player,
-    ) {
-        // It was a prompt, wait for answer
-        encounter.waiting_decision = Some(waiting);
-        encounter.active_phase = None;
-    } else {
-        // It was not a prompt, proceed
-        encounter.waiting_decision = None;
-        encounter.bump_phase();
-    }
+    )
 }
 
 fn advance_encounter(
@@ -95,26 +89,21 @@ fn advance_encounter(
     mut player: ResMut<Player>,
 ) {
     if let Some(active) = encounter.active_phase.clone() {
-        if let Some(waiting) = process_encounter_phase(
+        process_encounter_phase(
+            &mut encounter,
             active,
             &mut commands,
             &mut app_state,
             &mut ui_helper,
             &mut player,
-        ) {
-            // It was a prompt, wait for answer
-            encounter.waiting_decision = Some(waiting);
-            encounter.active_phase = None;
-        } else {
-            // It was not a prompt, proceed
-            encounter.waiting_decision = None;
-            encounter.bump_phase();
+        )
+    } else if let Some(decision) = encounter.waiting_decision.clone() {
+        // Game is waiting for a player choice
+        if let Some(index) = player.decision {
+            player.decision = None;
+            // player has made a decision
+            encounter.active_phase = Some(*decision.options.get(index).unwrap().1.clone())
         }
-    } else if let (Some(decision), Some(index)) =
-        (encounter.waiting_decision.clone(), player.decision)
-    {
-        // Game is waiting for a player choice and player has made a decision
-        encounter.active_phase = Some(*decision.options.get(index).unwrap().1.clone())
     } else {
         // No active phase, nor is the system waiting for a decision
         // Return to travel
@@ -124,23 +113,14 @@ fn advance_encounter(
 }
 
 fn process_encounter_phase(
+    encounter: &mut ResMut<OngoingEncounter>,
     phase: EncounterPhase,
     commands: &mut Commands,
     app_state: &mut ResMut<State<AppState>>,
     ui_helper: &mut ResMut<UIHelper>,
     player: &mut ResMut<Player>,
-) -> Option<EncounterDecision> {
+) {
     match phase {
-        EncounterPhase::Battle(battle) => {
-            app_state.push(AppState::Battle).unwrap();
-            commands.insert_resource(OngoingBattle(battle));
-            ui_helper.show_line("Can't escape from crossing fate!");
-            None
-        }
-        EncounterPhase::Line(line) => {
-            ui_helper.show_line(line);
-            None
-        }
         EncounterPhase::Decision(decision) => {
             ui_helper.prompt(
                 decision.prompt,
@@ -151,17 +131,25 @@ fn process_encounter_phase(
                     .cloned()
                     .collect(),
             );
-            Some(decision)
+            encounter.waiting_decision = Some(decision);
+            encounter.active_phase = None;
+            return;
+        }
+        EncounterPhase::Battle(battle) => {
+            app_state.push(AppState::Battle).unwrap();
+            commands.insert_resource(OngoingBattle(battle));
+            ui_helper.show_line("Can't escape from crossing fate!");
+        }
+        EncounterPhase::Line(line) => {
+            ui_helper.show_line(line);
         }
         EncounterPhase::Gain(line, resources) => {
             ui_helper.show_line(line);
             player.resources.add(resources);
-            None
         }
         EncounterPhase::Lose(line, resources) => {
             ui_helper.show_line(line);
             player.resources.remove(resources);
-            None
         }
         EncounterPhase::Trade(line_success, line_failure, resources_cost, resources_reward) => {
             if player.resources.remove(resources_cost) {
@@ -170,7 +158,10 @@ fn process_encounter_phase(
             } else {
                 ui_helper.show_line(line_failure);
             }
-            None
         }
     }
+
+    // It was not a prompt, proceed to the next one
+    encounter.waiting_decision = None;
+    encounter.bump_phase();
 }

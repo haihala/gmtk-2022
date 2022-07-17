@@ -10,6 +10,7 @@ use crate::{
 };
 
 pub const BATTLE_ARENA_WIDTH: u32 = 4;
+pub const BATTLE_ARENA_DEPTH: u32 = 3;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Battle {
@@ -54,6 +55,55 @@ impl Battle {
             }
         }
     }
+
+    fn get_valid_targets(&self, player_position: u32, range: u32) -> Vec<Enemy> {
+        self.lanes
+            .clone()
+            .into_iter()
+            .enumerate()
+            .filter_map(|(lane_index, maybe_enemy)| {
+                // Filter to enemies in range
+                if let Some(enemy) = maybe_enemy {
+                    if (lane_index as i32 - player_position as i32 + enemy.position as i32) as u32
+                        <= range
+                    {
+                        Some(enemy)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    fn get_valid_target_mut(
+        &mut self,
+        player_position: u32,
+        range: u32,
+        index: usize,
+    ) -> &mut Enemy {
+        self.lanes
+            .iter_mut()
+            .enumerate()
+            .filter_map(|(lane_index, maybe_enemy)| {
+                // Filter to enemies in range
+                if let Some(enemy) = maybe_enemy {
+                    if (lane_index as i32 - player_position as i32 + enemy.position as i32) as u32
+                        <= range
+                    {
+                        Some(enemy)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .nth(index)
+            .unwrap()
+    }
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -75,12 +125,27 @@ impl Default for Weapon {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Default)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Enemy {
     pub name: &'static str,
     pub health: u32,
     pub weapons: Vec<Weapon>,
     pub position: u32,
+}
+
+impl Default for Enemy {
+    fn default() -> Self {
+        Self {
+            name: "Mystery foe",
+            health: 10,
+            weapons: vec![Weapon {
+                name: "Element of surprise",
+                damage: "1d6".into(),
+                ..default()
+            }],
+            position: BATTLE_ARENA_DEPTH,
+        }
+    }
 }
 
 #[derive(Debug, Deref, DerefMut)]
@@ -113,8 +178,6 @@ fn advance_battle(
     mut player: ResMut<Player>,
     mut battle: ResMut<OngoingBattle>,
 ) {
-    let mut rng = thread_rng();
-
     if let Some(decision) = player.decision {
         player.decision = None;
 
@@ -122,14 +185,24 @@ fn advance_battle(
             match selected_action {
                 BattleAction::Move => {
                     player.position = player.get_movable_locations()[decision].1;
+                    process_turn(
+                        &mut commands,
+                        &mut app_state,
+                        &mut battle,
+                        &mut player,
+                        &mut ui_helper,
+                    );
                     // Next round
-                    prompt_for_action(&mut ui_helper, player.get_battle_actions());
-                    player.clear_selections();
+                    dbg!("Player moving done");
                 }
                 BattleAction::Attack => {
                     if let Some(selected_weapon) = player.selected_weapon {
                         // Decision is about selecting a target
-                        let selected_target = &mut battle.unused_enemies[decision];
+                        let selected_target = battle.get_valid_target_mut(
+                            player.position,
+                            selected_weapon.range,
+                            decision,
+                        );
 
                         if player
                             .resources
@@ -137,8 +210,7 @@ fn advance_battle(
                         {
                             // Could successfully afford to use that weapon
                             let damage = selected_weapon.damage.roll();
-
-                            if damage >= selected_target.health {
+                            if damage < selected_target.health {
                                 selected_target.health -= damage;
                                 ui_helper.show_line(format!(
                                     "Using your {} to deal {} damage to {}, it remains steadfast",
@@ -160,54 +232,26 @@ fn advance_battle(
                             );
                         }
 
-                        for enemy in battle.unused_enemies.iter_mut() {
-                            if enemy.position > 1 {
-                                // Move closer
-                                enemy.position -= 1;
-                            } else {
-                                // Attack
-                                enemy.position += 2;
+                        process_turn(
+                            &mut commands,
+                            &mut app_state,
+                            &mut battle,
+                            &mut player,
+                            &mut ui_helper,
+                        );
+                    } else {
+                        let selected_weapon = player.get_weapons()[decision];
+                        let valid_targets =
+                            battle.get_valid_targets(player.position, selected_weapon.range);
 
-                                let weapon = enemy.weapons.choose(&mut rng).unwrap();
-                                let damage = weapon.damage.roll();
-                                player.resources.stamina -= damage;
-                                ui_helper.show_line(format!(
-                                    "{} uses {} to deal {} damage",
-                                    enemy.name, weapon.name, damage
-                                ));
-                            }
-                        }
-
-                        if player.is_dead() {
-                            app_state.set(AppState::GameOver).unwrap();
-                        } else if battle.is_over() {
-                            commands.remove_resource::<OngoingBattle>();
-                            // Battle is over, return to previous state
-                            app_state.pop().unwrap();
+                        if valid_targets.len() > 0 {
+                            player.selected_weapon = Some(selected_weapon);
+                            prompt_for_target(&mut ui_helper, valid_targets);
                         } else {
-                            // Next round
+                            ui_helper.show_line("Nobody in range for that I'm afraid");
                             prompt_for_action(&mut ui_helper, player.get_battle_actions());
                             player.clear_selections();
                         }
-                    } else {
-                        let selected_weapon = player.get_weapons()[decision];
-                        player.selected_weapon = Some(selected_weapon);
-                        prompt_for_target(
-                            &mut ui_helper,
-                            battle
-                                .unused_enemies
-                                .clone()
-                                .into_iter()
-                                .filter(|enemy| {
-                                    // Filter to enemies in range
-                                    (enemy.position - UVec2::X * player.position)
-                                        .as_vec2() // For some reason, IVec doesn't have a length, I guess you can't get a neat integer length
-                                        .length()
-                                        .round() as u32
-                                        <= selected_weapon.range
-                                })
-                                .collect(),
-                        );
                     }
                 }
             }
@@ -221,6 +265,55 @@ fn advance_battle(
                 BattleAction::Attack => prompt_for_weapon(&mut ui_helper, player.get_weapons()),
             }
         }
+    }
+}
+
+fn process_turn(
+    commands: &mut Commands,
+    app_state: &mut ResMut<State<AppState>>,
+    battle: &mut ResMut<OngoingBattle>,
+    player: &mut ResMut<Player>,
+    ui_helper: &mut ResMut<UIHelper>,
+) {
+    let mut rng = thread_rng();
+
+    for lane in battle.lanes.iter_mut() {
+        if let Some(ref mut enemy) = lane {
+            let weapon = enemy.weapons.choose(&mut rng).unwrap();
+            if enemy.position > weapon.range {
+                // Move closer
+                enemy.position -= 1;
+            } else {
+                // Attack
+                enemy.position += 2;
+
+                let damage = weapon.damage.roll();
+                if damage >= player.resources.stamina {
+                    ui_helper.show_line(format!(
+                        "{} takes your life with the {}",
+                        enemy.name, weapon.name
+                    ));
+                } else {
+                    player.resources.stamina -= damage;
+                    ui_helper.show_line(format!(
+                        "{} uses {} to deal {} damage",
+                        enemy.name, weapon.name, damage
+                    ));
+                }
+            }
+        }
+    }
+
+    if player.is_dead() {
+        app_state.set(AppState::GameOver).unwrap();
+    } else if battle.is_over() {
+        commands.remove_resource::<OngoingBattle>();
+        // Battle is over, return to previous state
+        app_state.pop().unwrap();
+    } else {
+        // Next round
+        prompt_for_action(ui_helper, player.get_battle_actions());
+        player.clear_selections();
     }
 }
 

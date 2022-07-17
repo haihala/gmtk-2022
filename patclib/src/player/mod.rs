@@ -94,16 +94,16 @@ impl Player {
     }
 
     pub fn get_movable_locations(&self) -> Vec<(&'static str, u32)> {
-        let left = ("left", self.position + 1);
-        let right = ("right", self.position - 1);
+        let mut collector = vec![];
 
-        if self.position == 0 {
-            vec![left]
-        } else if self.position == BATTLE_ARENA_WIDTH - 1 {
-            vec![right]
-        } else {
-            vec![left, right]
+        if self.position > 0 {
+            collector.push(("left", self.position - 1));
         }
+
+        if self.position < BATTLE_ARENA_WIDTH - 1 {
+            collector.push(("right", self.position + 1));
+        }
+        collector
     }
 
     pub fn clear_selections(&mut self) {
