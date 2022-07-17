@@ -200,6 +200,7 @@ fn chase() -> Encounter {
                 ..default()
             },
         ),
+        EncounterPhase::Break,
     ]);
 
     Encounter::from_phases(vec![
