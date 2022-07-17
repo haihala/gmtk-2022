@@ -2,7 +2,10 @@ use core::fmt;
 
 use bevy::prelude::*;
 
-use crate::{battle::Weapon, dice_value::DiceValue};
+use crate::{
+    battle::{Weapon, BATTLE_ARENA_WIDTH},
+    dice_value::DiceValue,
+};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum BattleAction {
@@ -26,7 +29,7 @@ pub struct Player {
     pub weapons: Vec<Weapon>,
     pub selected_action: Option<BattleAction>,
     pub selected_weapon: Option<Weapon>,
-    pub position: IVec2,
+    pub position: u32,
 }
 
 impl Player {
@@ -88,6 +91,19 @@ impl Player {
             })
             .cloned()
             .collect()
+    }
+
+    pub fn get_movable_locations(&self) -> Vec<(&'static str, u32)> {
+        let left = ("left", self.position + 1);
+        let right = ("right", self.position - 1);
+
+        if self.position == 0 {
+            vec![left]
+        } else if self.position == BATTLE_ARENA_WIDTH - 1 {
+            vec![right]
+        } else {
+            vec![left, right]
+        }
     }
 
     pub fn clear_selections(&mut self) {

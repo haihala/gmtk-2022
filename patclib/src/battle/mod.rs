@@ -7,6 +7,8 @@ use crate::{
     ui::UIHelper,
 };
 
+pub const BATTLE_ARENA_WIDTH: u32 = 4;
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Battle {
     enemies: Vec<Enemy>,
@@ -50,7 +52,7 @@ pub struct Enemy {
     pub name: &'static str,
     pub health: u32,
     pub weapons: Vec<Weapon>,
-    pub position: IVec2,
+    pub position: UVec2,
 }
 
 #[derive(Debug, Deref, DerefMut)]
@@ -90,8 +92,10 @@ fn advance_battle(
         if let Some(selected_action) = player.selected_action {
             match selected_action {
                 BattleAction::Move => {
-                    // TODO: Handle moving
-                    let selected_location = todo!(); // &mut ???[decision];
+                    player.position = player.get_movable_locations()[decision].1;
+                    // Next round
+                    prompt_for_action(&mut ui_helper, player.get_battle_actions());
+                    player.clear_selections();
                 }
                 BattleAction::Attack => {
                     if let Some(selected_weapon) = player.selected_weapon {
@@ -135,7 +139,7 @@ fn advance_battle(
                                 .into_iter()
                                 .filter(|enemy| {
                                     // Filter to enemies in range
-                                    (enemy.position - player.position)
+                                    (enemy.position - UVec2::X * player.position)
                                         .as_vec2() // For some reason, IVec doesn't have a length, I guess you can't get a neat integer length
                                         .length()
                                         .round() as u32
