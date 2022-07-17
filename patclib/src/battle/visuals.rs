@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use bevy::prelude::*;
+use bevy::{asset::LoadedAsset, prelude::*};
 
 use crate::{assets::AssetHandles, player::Player};
 
@@ -36,16 +36,27 @@ const TILE_Y_OFFSET: f32 = 0.0;
 const TILE_ANGLE_OFFSET: f32 = 2.0 * PI / (30.0);
 const TILE_SCALE_CHANGE: f32 = 0.02 * TILE_WIDTH;
 
+const ENEMY_SIZE_X: f32 = 100.0;
+const ENEMY_SIZE_Y: f32 = 100.0;
+
+fn tile_position(x: u32, y: u32) -> Vec3 {
+    tile_position_default(x, y, 0.0, 0.0)
+}
+
+fn tile_position_default(x: u32, y: u32, x_offset: f32, y_offset: f32) -> Vec3 {
+    Vec3::new(
+        (x as f32) * TILE_WIDTH
+            + TILE_X_OFFSET
+            + (((BATTLE_ARENA_DEPTH - y) as f32) * (TILE_SCALE_CHANGE + x_offset)),
+        (y as f32) * TILE_HEIGHT + TILE_Y_OFFSET + y_offset,
+        0.0,
+    )
+}
+
 fn draw_tile(commands: &mut Commands, assets: &Res<AssetHandles>, x: u32, y: u32) {
     let bundle: SpriteBundle = SpriteBundle {
         transform: Transform {
-            translation: Vec3::new(
-                (x as f32) * TILE_WIDTH
-                    + TILE_X_OFFSET
-                    + (((BATTLE_ARENA_DEPTH - y) as f32) * TILE_SCALE_CHANGE),
-                (y as f32) * TILE_HEIGHT + TILE_Y_OFFSET,
-                0.0,
-            ),
+            translation: tile_position(x, y),
             rotation: Quat::from_rotation_y(((y as f32) + 1.0) * TILE_ANGLE_OFFSET),
             ..default()
         },
@@ -61,6 +72,27 @@ fn draw_tile(commands: &mut Commands, assets: &Res<AssetHandles>, x: u32, y: u32
 
 fn draw_enemies(commands: &mut Commands, assets: &Res<AssetHandles>, lanes: Vec<Option<Enemy>>) {
     //todo!()
+    for lane in lanes.iter() {
+        if let Some(enemy) = lane {
+            let bundle: SpriteBundle = SpriteBundle {
+                transform: Transform {
+                    translation: tile_position_default(
+                        enemy.position_x,
+                        enemy.position_y,
+                        0.0,
+                        ENEMY_SIZE_Y / 2.0,
+                    ),
+                    ..default()
+                },
+                sprite: Sprite {
+                    custom_size: Some(Vec2::new(ENEMY_SIZE_X, ENEMY_SIZE_Y)),
+                    ..default()
+                },
+                texture: enemy.handle_image.clone(),
+                ..default()
+            };
+        }
+    }
 }
 fn draw_player(commands: &mut Commands, assets: &Res<AssetHandles>, player: &Res<Player>) {
     //todo!()

@@ -66,7 +66,7 @@ impl Battle {
             .filter_map(|(lane_index, maybe_enemy)| {
                 // Filter to enemies in range
                 if let Some(enemy) = maybe_enemy {
-                    if (lane_index as i32 - player_position as i32 + enemy.position as i32) as u32
+                    if (lane_index as i32 - player_position as i32 + enemy.position_y as i32) as u32
                         <= range
                     {
                         Some(enemy)
@@ -92,7 +92,7 @@ impl Battle {
             .filter_map(|(lane_index, maybe_enemy)| {
                 // Filter to enemies in range
                 if let Some(enemy) = maybe_enemy {
-                    if (lane_index as i32 - player_position as i32 + enemy.position as i32) as u32
+                    if (lane_index as i32 - player_position as i32 + enemy.position_y as i32) as u32
                         <= range
                     {
                         Some(enemy)
@@ -132,7 +132,9 @@ pub struct Enemy {
     pub name: &'static str,
     pub health: u32,
     pub weapons: Vec<Weapon>,
-    pub position: u32,
+    pub position_x: u32,
+    pub position_y: u32,
+    pub handle_image: Handle<Image>,
 }
 
 impl Default for Enemy {
@@ -145,7 +147,9 @@ impl Default for Enemy {
                 damage: "1d6".into(),
                 ..default()
             }],
-            position: BATTLE_ARENA_DEPTH,
+            position_y: BATTLE_ARENA_DEPTH,
+            position_x: BATTLE_ARENA_WIDTH,
+            ..default()
         }
     }
 }
@@ -289,13 +293,13 @@ fn process_turn(
     for lane in battle.lanes.iter_mut() {
         if let Some(ref mut enemy) = lane {
             let weapon = enemy.weapons.choose(&mut rng).unwrap();
-            if enemy.position > weapon.range {
+            if enemy.position_y > weapon.range {
                 // Move closer
-                enemy.position -= 1;
+                enemy.position_y -= 1;
                 ui_helper.show_line(format!("{} creeps closer", enemy.name))
             } else {
                 // Attack
-                enemy.position += 2;
+                enemy.position_y += 2;
 
                 let damage = weapon.damage.roll();
                 if damage >= player.resources.stamina {
