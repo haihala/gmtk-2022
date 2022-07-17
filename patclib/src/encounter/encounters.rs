@@ -48,46 +48,11 @@ fn encounters() -> Vec<Encounter> {
     ]);
 
     vec![
-        loop_test(),
         test_encounter(wolves.clone()),
         wolf_fight(wolves),
         electric_sheep(),
         merchant(),
     ]
-}
-
-fn loop_test() -> Encounter {
-    Encounter::from_phases(vec![
-        EncounterPhase::Line("You are entering into a loop!"),
-        EncounterPhase::Loop(vec![
-            EncounterPhase::Line("You in the loop now!"),
-            EncounterPhase::Decision(EncounterDecision {
-                prompt: "Would you like to get out?",
-                options: vec![
-                    (
-                        "Honestly, nah",
-                        Box::new(EncounterPhase::Line("Have it your way!")),
-                    ),
-                    ("Would prefer not to", Box::new(EncounterPhase::Break)),
-                    (
-                        "Could I get some money?",
-                        Box::new(EncounterPhase::Loop(vec![
-                            EncounterPhase::Line("Absolutely!"),
-                            EncounterPhase::Gain(
-                                "You gain a moneydice",
-                                PlayerResources {
-                                    money: "1d6".into(),
-                                    ..default()
-                                },
-                            ),
-                            EncounterPhase::Break,
-                        ])),
-                    ),
-                ],
-            }),
-        ]),
-        EncounterPhase::Line("You have broken out of the loop!"),
-    ])
 }
 
 fn test_encounter(wolves: Battle) -> Encounter {
@@ -159,66 +124,81 @@ fn electric_sheep() -> Encounter {
 }
 
 fn merchant() -> Encounter {
-    Encounter::from_phases(vec![
-        EncounterPhase::Line("You see a merchant travelling down the road"),
+    let bullet_trade = EncounterPhase::Trade(
+        "You get some ammo.",
+        "Unfortunately your math rocks failed you today, the marchant gets huffy.",
+        PlayerResources {
+            money: "10".into(),
+            ..default()
+        },
+        PlayerResources {
+            bullets: 6,
+            ..default()
+        },
+    );
+
+    let food_trade = EncounterPhase::Trade(
+        "You manage to gain some energy.",
+        "You don't have enough money.",
+        PlayerResources {
+            money: "8".into(),
+            ..default()
+        },
+        PlayerResources {
+            stamina: 4,
+            ..default()
+        },
+    );
+
+    let mystery_box_trade = EncounterPhase::Loop(vec![
+        EncounterPhase::Trade(
+            "You gain a mystery box!",
+            "You don't have enough money.",
+            PlayerResources {
+                money: "2d6".into(),
+                ..default()
+            },
+            PlayerResources::default(),
+        ),
+        EncounterPhase::Line(
+            "The box contains absolutely nothing, as you look back up, the merchant grins at you",
+        ),
+        EncounterPhase::Break,
+    ]);
+
+    let trade_options = vec![
+        ("Bullets, 6 for 10 dice value!", Box::new(bullet_trade)),
+        (
+            "Food, 4 points of stamina for 8 dice value",
+            Box::new(food_trade),
+        ),
+        ("Mystery box", Box::new(mystery_box_trade)),
+    ];
+
+    let trade_loop = EncounterPhase::Loop(vec![
         EncounterPhase::Decision(EncounterDecision {
-            prompt: "Would you like to see my wares?",
+            prompt: "Do you wish to engage in trade?",
             options: vec![
                 (
                     "Sure, why not.",
-                    Box::new(EncounterPhase::Decision(EncounterDecision {
-                        prompt: "What do you choose?",
-                        options: vec![
-                            (
-                                "Ammo!",
-                                Box::new(EncounterPhase::Trade(
-                                    "You get some ammo.",
-                                    "You don't have enough money.",
-                                    PlayerResources {
-                                        money: "3d6".into(),
-                                        ..default()
-                                    },
-                                    PlayerResources {
-                                        bullets: 6,
-                                        ..default()
-                                    },
-                                )),
-                            ),
-                            (
-                                "Food",
-                                Box::new(EncounterPhase::Trade(
-                                    "You manage to gain some energy.",
-                                    "You don't have enough money.",
-                                    PlayerResources {
-                                        money: "2d6".into(),
-                                        ..default()
-                                    },
-                                    PlayerResources {
-                                        stamina: 4,
-                                        ..default()
-                                    },
-                                )),
-                            ),
-                            (
-                                "Mystery box",
-                                Box::new(EncounterPhase::Trade(
-                                    "You gain a mystery box!",
-                                    "You don't have enough money.",
-                                    PlayerResources {
-                                        money: "2d6".into(),
-                                        ..default()
-                                    },
-                                    PlayerResources { ..default() },
-                                )),
-                            ),
-                        ],
-                    })),
+                    Box::new(EncounterPhase::Line(
+                        "The merchant opens his coat to reveal trinkets and baubles of all sorts",
+                    )),
                 ),
-                (
-                    "No thank you.",
-                    Box::new(EncounterPhase::Line("The merchant continues his journey.")),
-                ),
+                ("Maybe some other time.", Box::new(EncounterPhase::Break)),
             ],
         }),
+        EncounterPhase::Decision(EncounterDecision {
+            prompt: "Anything in particular?",
+            options: trade_options,
+        }),
+        EncounterPhase::Line("Still interested?"),
+    ]);
+
+    Encounter::from_phases(vec![
+        EncounterPhase::Line("You see a merchant travelling down the road"),
+        EncounterPhase::Line("Interested in trade, are we?"),
+        trade_loop,
+        EncounterPhase::Line("The merchant continues his journey."),
     ])
 }
