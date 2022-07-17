@@ -48,11 +48,46 @@ fn encounters() -> Vec<Encounter> {
     ]);
 
     vec![
+        loop_test(),
         test_encounter(wolves.clone()),
         wolf_fight(wolves),
         electric_sheep(),
         merchant(),
     ]
+}
+
+fn loop_test() -> Encounter {
+    Encounter::from_phases(vec![
+        EncounterPhase::Line("You are entering into a loop!"),
+        EncounterPhase::Loop(vec![
+            EncounterPhase::Line("You in the loop now!"),
+            EncounterPhase::Decision(EncounterDecision {
+                prompt: "Would you like to get out?",
+                options: vec![
+                    (
+                        "Honestly, nah",
+                        Box::new(EncounterPhase::Line("Have it your way!")),
+                    ),
+                    ("Would prefer not to", Box::new(EncounterPhase::Break)),
+                    (
+                        "Could I get some money?",
+                        Box::new(EncounterPhase::Loop(vec![
+                            EncounterPhase::Line("Absolutely!"),
+                            EncounterPhase::Gain(
+                                "You gain a moneydice",
+                                PlayerResources {
+                                    money: "1d6".into(),
+                                    ..default()
+                                },
+                            ),
+                            EncounterPhase::Break,
+                        ])),
+                    ),
+                ],
+            }),
+        ]),
+        EncounterPhase::Line("You have broken out of the loop!"),
+    ])
 }
 
 fn test_encounter(wolves: Battle) -> Encounter {

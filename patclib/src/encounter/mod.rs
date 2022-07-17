@@ -27,28 +27,65 @@ pub enum EncounterPhase {
     Gain(&'static str, PlayerResources),
     Lose(&'static str, PlayerResources),
     Trade(&'static str, &'static str, PlayerResources, PlayerResources),
+    Loop(Vec<EncounterPhase>),
+    Break,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Default)]
 pub struct Encounter {
-    phases: Vec<EncounterPhase>,
-    index: usize,
-    active_phase: Option<EncounterPhase>,
-    waiting_decision: Option<EncounterDecision>,
+    stack: Vec<Vec<EncounterPhase>>,
+    stack_pointers: Vec<usize>,
 }
 impl Encounter {
     fn from_phases(phases: Vec<EncounterPhase>) -> Self {
         Self {
-            phases,
-            index: 0,
-            active_phase: None,
-            waiting_decision: None,
+            stack: vec![phases],
+            stack_pointers: vec![0],
+            ..default()
         }
     }
 
-    fn bump_phase(&mut self) {
-        self.active_phase = self.phases.get(self.index + 1).map(|item| item.to_owned());
-        self.index += 1;
+    fn move_forward(&mut self) {
+        *self.stack_pointers.last_mut().unwrap() += 1;
+        if self.get_active_phase().is_none() {
+            if self.in_a_loop() {
+                // Back to loop start
+                *self.stack_pointers.last_mut().unwrap() = 0;
+            }
+        }
+    }
+
+    fn get_active_phase(&self) -> Option<EncounterPhase> {
+        if let (Some(stack_frame), Some(pointer)) = (self.stack.last(), self.stack_pointers.last())
+        {
+            stack_frame.get(*pointer).map(|item| item.to_owned())
+        } else {
+            None
+        }
+    }
+
+    fn waiting_for_input(&self) -> bool {
+        matches!(
+            self.get_active_phase(),
+            Some(EncounterPhase::Decision(_) | EncounterPhase::Battle(_))
+        )
+    }
+
+    fn break_loop(&mut self) {
+        self.stack.pop();
+        self.stack_pointers.pop();
+
+        // To move over the decision that caused the loop in the first place
+        self.move_forward();
+    }
+
+    fn start_loop(&mut self, stack_frame: Vec<EncounterPhase>) {
+        self.stack.push(stack_frame);
+        self.stack_pointers.push(0);
+    }
+
+    fn in_a_loop(&self) -> bool {
+        self.stack.len() > 1
     }
 }
 
@@ -70,15 +107,13 @@ fn init_encounter(
     mut ui_helper: ResMut<UIHelper>,
     mut player: ResMut<Player>,
 ) {
-    let phase = encounter.phases[0].clone();
-    process_encounter_phase(
+    event_loop(
         &mut encounter,
-        phase,
         &mut commands,
         &mut app_state,
         &mut ui_helper,
         &mut player,
-    )
+    );
 }
 
 fn advance_encounter(
@@ -88,26 +123,53 @@ fn advance_encounter(
     mut ui_helper: ResMut<UIHelper>,
     mut player: ResMut<Player>,
 ) {
-    if let Some(active) = encounter.active_phase.clone() {
-        process_encounter_phase(
+    if let Some(decision) = player.drain_decision() {
+        // Only act if player has done something
+        if let Some(EncounterPhase::Decision(next_phase)) = encounter.get_active_phase() {
+            process_encounter_phase(
+                &mut encounter,
+                *next_phase.options.get(decision).unwrap().1.clone(),
+                &mut commands,
+                &mut app_state,
+                &mut ui_helper,
+                &mut player,
+            );
+        } else {
+            panic!("Got input while not waiting for input");
+        };
+        event_loop(
             &mut encounter,
-            active,
             &mut commands,
             &mut app_state,
             &mut ui_helper,
             &mut player,
-        )
-    } else if let Some(decision) = encounter.waiting_decision.clone() {
-        // Game is waiting for a player choice
-        if let Some(index) = player.drain_decision() {
-            // player has made a decision
-            encounter.active_phase = Some(*decision.options.get(index).unwrap().1.clone())
+        );
+    }
+}
+
+fn event_loop(
+    encounter: &mut ResMut<OngoingEncounter>,
+    commands: &mut Commands,
+    app_state: &mut ResMut<State<AppState>>,
+    ui_helper: &mut ResMut<UIHelper>,
+    player: &mut ResMut<Player>,
+) {
+    loop {
+        if let Some(phase) = encounter.get_active_phase() {
+            dbg!(&phase);
+            process_encounter_phase(encounter, phase, commands, app_state, ui_helper, player);
+            if encounter.waiting_for_input() {
+                // This will show the question being prompted for
+                let phase = encounter.get_active_phase().unwrap();
+                process_encounter_phase(encounter, phase, commands, app_state, ui_helper, player);
+                break;
+            }
+        } else {
+            // Ran out of phases, encounter is over
+            commands.remove_resource::<OngoingEncounter>();
+            app_state.pop().unwrap();
+            break;
         }
-    } else {
-        // No active phase, nor is the system waiting for a decision
-        // Return to travel
-        app_state.pop().unwrap();
-        commands.remove_resource::<OngoingEncounter>();
     }
 }
 
@@ -130,25 +192,26 @@ fn process_encounter_phase(
                     .cloned()
                     .collect(),
             );
-            encounter.waiting_decision = Some(decision);
-            encounter.active_phase = None;
-            return;
         }
         EncounterPhase::Battle(battle) => {
             app_state.push(AppState::Battle).unwrap();
             commands.insert_resource(OngoingBattle(battle));
             ui_helper.show_line("Can't escape from crossing fate!");
+            encounter.move_forward();
         }
         EncounterPhase::Line(line) => {
             ui_helper.show_line(line);
+            encounter.move_forward();
         }
         EncounterPhase::Gain(line, resources) => {
             ui_helper.show_line(line);
             player.resources.add(resources);
+            encounter.move_forward();
         }
         EncounterPhase::Lose(line, resources) => {
             ui_helper.show_line(line);
             player.resources.remove(resources);
+            encounter.move_forward();
         }
         EncounterPhase::Trade(line_success, line_failure, resources_cost, resources_reward) => {
             if player.resources.remove(resources_cost) {
@@ -157,10 +220,13 @@ fn process_encounter_phase(
             } else {
                 ui_helper.show_line(line_failure);
             }
+            encounter.move_forward();
+        }
+        EncounterPhase::Break => {
+            encounter.break_loop();
+        }
+        EncounterPhase::Loop(phases) => {
+            encounter.start_loop(phases);
         }
     }
-
-    // It was not a prompt, proceed to the next one
-    encounter.waiting_decision = None;
-    encounter.bump_phase();
 }
